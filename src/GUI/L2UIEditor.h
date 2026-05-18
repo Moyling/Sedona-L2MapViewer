@@ -23,6 +23,12 @@ public:
 	void onHideAllClick(MyGUI::Widget* sender);
 	void onSelectClientClick(MyGUI::Widget* sender);
 	void onSelectDonorClick(MyGUI::Widget* sender);
+	void onRecentTarget1Click(MyGUI::Widget* sender);
+	void onRecentTarget2Click(MyGUI::Widget* sender);
+	void onRecentTarget3Click(MyGUI::Widget* sender);
+	void onRecentDonor1Click(MyGUI::Widget* sender);
+	void onRecentDonor2Click(MyGUI::Widget* sender);
+	void onRecentDonor3Click(MyGUI::Widget* sender);
 	void onSelectGeodataExportClick(MyGUI::Widget* sender);
 	void onSelectAssetStagingClick(MyGUI::Widget* sender);
 	void onShowClientStatusClick(MyGUI::Widget* sender);
@@ -40,6 +46,12 @@ protected:
 	void refreshStatusText();
 	void refreshClientStatusText();
 	void refreshStagingReportText();
+	void loadRecentClientHistory();
+	void saveRecentClientHistory();
+	void rememberRecentTarget(const char* path);
+	void rememberRecentDonor(const char* path);
+	void restartWithRecentTarget(int index);
+	void restartWithRecentDonor(int index);
 	void restartWithArguments(const char* arguments);
 	void restartWithProfile(const char* profile);
 	void restartWithDonorProfile(const char* profile);
@@ -58,6 +70,8 @@ protected:
 	MyGUI::Button *ui_loadDefaultButton;
 	MyGUI::Button *ui_loadAreaButton;
 	MyGUI::Button *ui_hideAllButton;
+	char recentTargetClients[3][CM_SYSTEM_MAXNAME];
+	char recentDonorClients[3][CM_SYSTEM_MAXNAME];
 public:
 	L2UIEditor();
 	virtual ~L2UIEditor();

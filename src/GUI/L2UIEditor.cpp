@@ -10,6 +10,26 @@ static bool FileExistsA(const char* path)
 	return path && path[0] && _access(path, 0) == 0;
 }
 
+static void NormalizeHistoryPath(char* path)
+{
+	if(!path)
+		return;
+
+	size_t len = strlen(path);
+	for(size_t i = 0; i < len; i++)
+	{
+		if(path[i] == '\\')
+			path[i] = '/';
+	}
+
+	len = strlen(path);
+	if(len > 0 && path[len - 1] != '/' && len + 1 < CM_SYSTEM_MAXNAME)
+	{
+		path[len] = '/';
+		path[len + 1] = 0;
+	}
+}
+
 static void JoinPathA(char* out, size_t outSize, const char* left, const char* right)
 {
 	if(!out || outSize == 0)
@@ -24,6 +44,44 @@ static void JoinPathA(char* out, size_t outSize, const char* left, const char* r
 	if(len > 0 && out[len - 1] != '\\' && out[len - 1] != '/')
 		strcat_s(out, outSize, "\\");
 	strcat_s(out, outSize, right);
+}
+
+static bool GetRecentClientHistoryPath(char* out, size_t outSize)
+{
+	if(!out || outSize == 0)
+		return false;
+
+	char localAppData[CM_SYSTEM_MAXNAME];
+	if(FAILED(SHGetFolderPathA(0, CSIDL_LOCAL_APPDATA, 0, SHGFP_TYPE_CURRENT, localAppData)))
+		return false;
+
+	char folder[CM_SYSTEM_MAXNAME];
+	JoinPathA(folder, sizeof(folder), localAppData, "Sedona-L2MapViewer");
+	CreateDirectoryA(folder, 0);
+	JoinPathA(out, outSize, folder, "recent-clients.txt");
+	return true;
+}
+
+static const char* CompactPathLabel(const char* path)
+{
+	if(!path || !path[0])
+		return "";
+
+	const char* end = path + strlen(path);
+	while(end > path && (end[-1] == '/' || end[-1] == '\\'))
+		end--;
+
+	const char* start = end;
+	while(start > path && start[-1] != '/' && start[-1] != '\\')
+		start--;
+
+	static char label[96];
+	size_t len = (size_t)(end - start);
+	if(len >= sizeof(label))
+		len = sizeof(label) - 1;
+	memcpy(label, start, len);
+	label[len] = 0;
+	return label;
 }
 
 static bool FindStagedImportCopyScript(char* out, size_t outSize)
@@ -279,6 +337,11 @@ L2UIEditor::L2UIEditor()
 	ui_loadDefaultButton = 0;
 	ui_loadAreaButton = 0;
 	ui_hideAllButton = 0;
+	for(int i = 0; i < 3; i++)
+	{
+		recentTargetClients[i][0] = 0;
+		recentDonorClients[i][0] = 0;
+	}
 }
 
 L2UIEditor::~L2UIEditor()
@@ -287,6 +350,8 @@ L2UIEditor::~L2UIEditor()
 
 void L2UIEditor::Init()
 {
+	loadRecentClientHistory();
+
 	ui_topMenu = MyGUI::Gui::getInstance().createWidget<MyGUI::MenuBar>("MenuBar", 0, 0, 460, 24, MyGUI::Align::Default, "L2Editor", "TopMenu");
 	ui_topMenu->setAlign(MyGUI::Align::HStretch | MyGUI::Align::Top);
 	MyGUI::MenuItemPtr ui_topMenu_Main = ui_topMenu->addItem(L"Menu", MyGUI::MenuItemType::Popup);
@@ -312,6 +377,52 @@ void L2UIEditor::Init()
 	ui_topMenu_Client_Select->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectClientClick);
 	MyGUI::MenuItem *ui_topMenu_Client_Donor = ui_topMenu_ClientMenu->addItem(L"Select donor client...", MyGUI::MenuItemType::Normal, "TopMenu_Client_Donor");
 	ui_topMenu_Client_Donor->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectDonorClick);
+	if(recentTargetClients[0][0] || recentDonorClients[0][0])
+		ui_topMenu_ClientMenu->addItem("", MyGUI::MenuItemType::Separator);
+	if(recentTargetClients[0][0])
+	{
+		char caption[160];
+		sprintf_s(caption, sizeof(caption), "Recent target: %s", CompactPathLabel(recentTargetClients[0]));
+		MyGUI::MenuItem *recent = ui_topMenu_ClientMenu->addItem(caption, MyGUI::MenuItemType::Normal, "TopMenu_Client_RecentTarget1");
+		recent->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onRecentTarget1Click);
+	}
+	if(recentTargetClients[1][0])
+	{
+		char caption[160];
+		sprintf_s(caption, sizeof(caption), "Recent target: %s", CompactPathLabel(recentTargetClients[1]));
+		MyGUI::MenuItem *recent = ui_topMenu_ClientMenu->addItem(caption, MyGUI::MenuItemType::Normal, "TopMenu_Client_RecentTarget2");
+		recent->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onRecentTarget2Click);
+	}
+	if(recentTargetClients[2][0])
+	{
+		char caption[160];
+		sprintf_s(caption, sizeof(caption), "Recent target: %s", CompactPathLabel(recentTargetClients[2]));
+		MyGUI::MenuItem *recent = ui_topMenu_ClientMenu->addItem(caption, MyGUI::MenuItemType::Normal, "TopMenu_Client_RecentTarget3");
+		recent->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onRecentTarget3Click);
+	}
+	if(recentDonorClients[0][0])
+	{
+		char caption[160];
+		sprintf_s(caption, sizeof(caption), "Recent donor: %s", CompactPathLabel(recentDonorClients[0]));
+		MyGUI::MenuItem *recent = ui_topMenu_ClientMenu->addItem(caption, MyGUI::MenuItemType::Normal, "TopMenu_Client_RecentDonor1");
+		recent->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onRecentDonor1Click);
+	}
+	if(recentDonorClients[1][0])
+	{
+		char caption[160];
+		sprintf_s(caption, sizeof(caption), "Recent donor: %s", CompactPathLabel(recentDonorClients[1]));
+		MyGUI::MenuItem *recent = ui_topMenu_ClientMenu->addItem(caption, MyGUI::MenuItemType::Normal, "TopMenu_Client_RecentDonor2");
+		recent->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onRecentDonor2Click);
+	}
+	if(recentDonorClients[2][0])
+	{
+		char caption[160];
+		sprintf_s(caption, sizeof(caption), "Recent donor: %s", CompactPathLabel(recentDonorClients[2]));
+		MyGUI::MenuItem *recent = ui_topMenu_ClientMenu->addItem(caption, MyGUI::MenuItemType::Normal, "TopMenu_Client_RecentDonor3");
+		recent->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onRecentDonor3Click);
+	}
+	if(recentTargetClients[0][0] || recentDonorClients[0][0])
+		ui_topMenu_ClientMenu->addItem("", MyGUI::MenuItemType::Separator);
 	MyGUI::MenuItem *ui_topMenu_Client_GeoExport = ui_topMenu_ClientMenu->addItem(L"Select geodata export...", MyGUI::MenuItemType::Normal, "TopMenu_Client_GeoExport");
 	ui_topMenu_Client_GeoExport->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectGeodataExportClick);
 	MyGUI::MenuItem *ui_topMenu_Client_AssetStaging = ui_topMenu_ClientMenu->addItem(L"Select asset staging...", MyGUI::MenuItemType::Normal, "TopMenu_Client_AssetStaging");
@@ -478,6 +589,7 @@ void L2UIEditor::onSelectClientClick(MyGUI::Widget* sender)
 	char path[CM_SYSTEM_MAXNAME];
 	if(SHGetPathFromIDListA(itemList, path))
 	{
+		rememberRecentTarget(path);
 		char args[4096];
 		sprintf_s(args, sizeof(args), "--client=\"%s\" --donor-client=\"%s\" --geodata=\"%s\" --geodata-export=\"%s\" --asset-staging=\"%s\"", path, g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
 		restartWithArguments(args);
@@ -501,12 +613,43 @@ void L2UIEditor::onSelectDonorClick(MyGUI::Widget* sender)
 	char path[CM_SYSTEM_MAXNAME];
 	if(SHGetPathFromIDListA(itemList, path))
 	{
+		rememberRecentDonor(path);
 		char args[4096];
 		sprintf_s(args, sizeof(args), "--client=\"%s\" --donor-client=\"%s\" --geodata=\"%s\" --geodata-export=\"%s\" --asset-staging=\"%s\"", g_cfg.getClientBaseDir(), path, g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
 		restartWithArguments(args);
 	}
 
 	CoTaskMemFree(itemList);
+}
+
+void L2UIEditor::onRecentTarget1Click(MyGUI::Widget* sender)
+{
+	restartWithRecentTarget(0);
+}
+
+void L2UIEditor::onRecentTarget2Click(MyGUI::Widget* sender)
+{
+	restartWithRecentTarget(1);
+}
+
+void L2UIEditor::onRecentTarget3Click(MyGUI::Widget* sender)
+{
+	restartWithRecentTarget(2);
+}
+
+void L2UIEditor::onRecentDonor1Click(MyGUI::Widget* sender)
+{
+	restartWithRecentDonor(0);
+}
+
+void L2UIEditor::onRecentDonor2Click(MyGUI::Widget* sender)
+{
+	restartWithRecentDonor(1);
+}
+
+void L2UIEditor::onRecentDonor3Click(MyGUI::Widget* sender)
+{
+	restartWithRecentDonor(2);
 }
 
 void L2UIEditor::onSelectGeodataExportClick(MyGUI::Widget* sender)
@@ -695,6 +838,138 @@ void L2UIEditor::refreshClientStatusText()
 	char status[4096];
 	sprintf_s(status, sizeof(status), "Target profile: %s\nTarget client:\n%s\n\nDonor profile: %s\nDonor client:\n%s\n\nGeodata input:\n%s\n\nGeodata export:\n%s\n\nAsset staging:\n%s", g_cfg.getClientProfileName(), g_cfg.getClientBaseDir(), g_cfg.getDonorProfileName(), g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
 	ui_clientStatusText->setCaption(MyGUI::UString(status));
+}
+
+void L2UIEditor::loadRecentClientHistory()
+{
+	for(int i = 0; i < 3; i++)
+	{
+		recentTargetClients[i][0] = 0;
+		recentDonorClients[i][0] = 0;
+	}
+
+	char historyPath[CM_SYSTEM_MAXNAME];
+	if(!GetRecentClientHistoryPath(historyPath, sizeof(historyPath)))
+		return;
+
+	FILE* file = fopen(historyPath, "rt");
+	if(!file)
+		return;
+
+	int targetIndex = 0;
+	int donorIndex = 0;
+	char line[CM_SYSTEM_MAXNAME + 32];
+	while(fgets(line, sizeof(line), file))
+	{
+		char* newline = strpbrk(line, "\r\n");
+		if(newline)
+			*newline = 0;
+
+		if(strncmp(line, "target=", 7) == 0 && targetIndex < 3)
+		{
+			strcpy_s(recentTargetClients[targetIndex], sizeof(recentTargetClients[targetIndex]), line + 7);
+			NormalizeHistoryPath(recentTargetClients[targetIndex]);
+			targetIndex++;
+		}
+		else if(strncmp(line, "donor=", 6) == 0 && donorIndex < 3)
+		{
+			strcpy_s(recentDonorClients[donorIndex], sizeof(recentDonorClients[donorIndex]), line + 6);
+			NormalizeHistoryPath(recentDonorClients[donorIndex]);
+			donorIndex++;
+		}
+	}
+
+	fclose(file);
+}
+
+void L2UIEditor::saveRecentClientHistory()
+{
+	char historyPath[CM_SYSTEM_MAXNAME];
+	if(!GetRecentClientHistoryPath(historyPath, sizeof(historyPath)))
+		return;
+
+	FILE* file = fopen(historyPath, "wt");
+	if(!file)
+		return;
+
+	for(int i = 0; i < 3; i++)
+	{
+		if(recentTargetClients[i][0])
+			fprintf(file, "target=%s\n", recentTargetClients[i]);
+	}
+	for(int i = 0; i < 3; i++)
+	{
+		if(recentDonorClients[i][0])
+			fprintf(file, "donor=%s\n", recentDonorClients[i]);
+	}
+
+	fclose(file);
+}
+
+static void RememberPathInList(char entries[3][CM_SYSTEM_MAXNAME], const char* path)
+{
+	if(!path || !path[0])
+		return;
+
+	char normalized[CM_SYSTEM_MAXNAME];
+	strcpy_s(normalized, sizeof(normalized), path);
+	NormalizeHistoryPath(normalized);
+
+	int existing = -1;
+	for(int i = 0; i < 3; i++)
+	{
+		if(entries[i][0] && _stricmp(entries[i], normalized) == 0)
+			existing = i;
+	}
+
+	if(existing == 0)
+		return;
+
+	if(existing > 0)
+	{
+		char previous[CM_SYSTEM_MAXNAME];
+		strcpy_s(previous, sizeof(previous), entries[existing]);
+		for(int i = existing; i > 0; i--)
+			strcpy_s(entries[i], sizeof(entries[i]), entries[i - 1]);
+		strcpy_s(entries[0], sizeof(entries[0]), previous);
+		return;
+	}
+
+	for(int i = 2; i > 0; i--)
+		strcpy_s(entries[i], sizeof(entries[i]), entries[i - 1]);
+	strcpy_s(entries[0], sizeof(entries[0]), normalized);
+}
+
+void L2UIEditor::rememberRecentTarget(const char* path)
+{
+	RememberPathInList(recentTargetClients, path);
+	saveRecentClientHistory();
+}
+
+void L2UIEditor::rememberRecentDonor(const char* path)
+{
+	RememberPathInList(recentDonorClients, path);
+	saveRecentClientHistory();
+}
+
+void L2UIEditor::restartWithRecentTarget(int index)
+{
+	if(index < 0 || index >= 3 || !recentTargetClients[index][0])
+		return;
+
+	char args[4096];
+	sprintf_s(args, sizeof(args), "--client=\"%s\" --donor-client=\"%s\" --geodata=\"%s\" --geodata-export=\"%s\" --asset-staging=\"%s\"", recentTargetClients[index], g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
+	restartWithArguments(args);
+}
+
+void L2UIEditor::restartWithRecentDonor(int index)
+{
+	if(index < 0 || index >= 3 || !recentDonorClients[index][0])
+		return;
+
+	char args[4096];
+	sprintf_s(args, sizeof(args), "--client=\"%s\" --donor-client=\"%s\" --geodata=\"%s\" --geodata-export=\"%s\" --asset-staging=\"%s\"", g_cfg.getClientBaseDir(), recentDonorClients[index], g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
+	restartWithArguments(args);
 }
 
 void L2UIEditor::refreshStagingReportText()
