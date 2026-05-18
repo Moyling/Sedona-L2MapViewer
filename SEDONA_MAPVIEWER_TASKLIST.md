@@ -21,12 +21,14 @@ This is not a finished release yet. The viewer starts and can load map tiles, bu
 - [x] Add all-profile compatibility scan for the three sample clients.
 - [x] Add tile package smoke test for H5, Fafurion, and Homonkulus sample clients.
 - [x] Guard package open failures before reading package headers.
+- [x] Smoke-test `23_22` and `22_22` on H5, Fafurion, and Homonkulus.
+- [x] Confirm sample map tiles use `Lineage2Ver111` and the internal XOR loader path.
 
 ## Next
 
 - [ ] Add in-app profile selector after the command-line flow is stable.
 - [ ] Harden texture/staticmesh failures into warnings during real tile load.
-- [ ] Extend package loading notes with exact package versions seen in H5, Fafurion, and Homonkulus.
+- [ ] Extend texture/staticmesh smoke checks beyond map packages.
 
 ## Usage
 
