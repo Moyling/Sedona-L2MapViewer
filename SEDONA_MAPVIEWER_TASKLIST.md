@@ -80,10 +80,11 @@ Sedona should become a Lineage II map builder, not only a map viewer.
 - [x] Add recent-client history behind the top Client menu.
 - [x] Design the editor data model: original map data, staged edits, imported assets, generated geodata.
 - [x] Implement a Sedona geodata writer from the Mobius `Region`/`IBlock` layout.
+- [x] Connect the Sedona geodata writer to dirty editor tiles and export reports.
 
 ## Next
 
-- [ ] Connect the Sedona geodata writer to dirty editor tiles and export reports.
+- [ ] Sample terrain/BSP/static mesh collision into generated geodata cells.
 - [ ] Wrap `L2AssetViewer` texture export tools as Sedona texture preview probes.
 - [ ] Convert package probe JSON into a persistent asset/dependency cache for the GUI.
 - [ ] Harden texture/staticmesh object deserialize failures into warnings during real tile load.

@@ -112,6 +112,7 @@ int SedonaEditorModel::AddEditCommand(const SedonaEditCommand& command)
 		if(!m_loadedTiles[command.TileIndex].HasGeneratedGeodata)
 			m_geodataExportPlan.DirtyTileCount++;
 		m_loadedTiles[command.TileIndex].HasGeneratedGeodata = true;
+		m_geodataExportPlan.ReadyToExport = m_geodataExportPlan.OutputDir[0] != 0 && m_geodataExportPlan.DirtyTileCount > 0;
 	}
 	return m_editCommandCount++;
 }

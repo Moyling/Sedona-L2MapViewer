@@ -21,9 +21,9 @@ Multilayer writing is deliberately blocked until the editor has a real collision
 - Convert individual cells to complex blocks when edited.
 - Save to a selected export folder as `<mapX>_<mapY>.l2j`.
 - Keep generated files separate from the selected client source.
+- Export dirty editor-model tiles through `SedonaGeodataExportReport`.
 
 ## Next Connections
 
-- Feed dirty tiles from `SedonaEditorModel` into this writer.
 - Sample terrain/BSP/static mesh collision into complex cells.
 - Add a GUI export report listing written files and blocked multilayer cases.
