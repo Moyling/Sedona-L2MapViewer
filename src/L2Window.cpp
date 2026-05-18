@@ -105,7 +105,7 @@ bool L2Window::create()
 	wc.hCursor			= LoadCursor(g_hinst, MAKEINTRESOURCE(IDC_L2POINTER));			// Load The Arrow Pointer
 	wc.hbrBackground	= NULL;									// No Background Required For GL
 	wc.lpszMenuName		= NULL;									// We Don't Want A Menu
-	wc.lpszClassName	= L"l2mapper";								// Set The Class Name
+	wc.lpszClassName	= L"Sedona-L2MapViewer";								// Set The Class Name
 
 	RegisterClass(&wc);
 
@@ -185,8 +185,8 @@ void L2Window::_create()
 
 	// Create The Window
 	g_hwnd=CreateWindowEx(dwExStyle,							// Extended Style For The Window
-								L"l2mapper",							// Class Name
-								L"L2 Content Editor v0.1",								// Window Title
+								L"Sedona-L2MapViewer",							// Class Name
+								L"Sedona L2 Map Viewer",								// Window Title
 								dwStyle |							// Defined Window Style
 								WS_CLIPSIBLINGS |					// Required Window Style
 								WS_CLIPCHILDREN,					// Required Window Style

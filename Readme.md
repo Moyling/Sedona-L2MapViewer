@@ -97,7 +97,7 @@ This workspace has been updated to use:
 Build command:
 
 ```powershell
-& 'C:\BuildTools\MSBuild\Current\Bin\MSBuild.exe' l2mapper.sln /m /p:Configuration=Release /p:Platform=x64 /v:minimal
+& 'C:\BuildTools\MSBuild\Current\Bin\MSBuild.exe' Sedona-L2MapViewer.sln /m /p:Configuration=Release /p:Platform=x64 /v:minimal
 ```
 
 Successful output:

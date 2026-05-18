@@ -139,7 +139,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{268AFF77-18D3-4CE9-BA95-B9DD62471290}</ProjectGuid>
-    <RootNamespace>l2mapper</RootNamespace>
+    <RootNamespace>SedonaL2MapViewer</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
