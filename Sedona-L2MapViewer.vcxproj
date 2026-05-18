@@ -30,6 +30,7 @@
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\core\L2InputManager.cpp" />
     <ClCompile Include="src\core\L2Time.cpp" />
+    <ClCompile Include="src\editor\SedonaEditorModel.cpp" />
     <ClCompile Include="src\GUI\L2UIBaseWidget.cpp" />
     <ClCompile Include="src\GUI\L2UIBusyScreen.cpp" />
     <ClCompile Include="src\GUI\L2UIEditor.cpp" />
@@ -78,6 +79,7 @@
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\core\L2InputManager.h" />
     <ClInclude Include="src\core\L2Time.h" />
+    <ClInclude Include="src\editor\SedonaEditorModel.h" />
     <ClInclude Include="src\GUI\L2UIBaseWidget.h" />
     <ClInclude Include="src\GUI\L2UIBusyScreen.h" />
     <ClInclude Include="src\GUI\L2UIEditor.h" />
