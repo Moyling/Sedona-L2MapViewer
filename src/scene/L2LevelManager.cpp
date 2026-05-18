@@ -19,7 +19,7 @@ void L2LevelManager::Init()
 	//UPackageMgr.Init("E:/games/l2fr/");
 	//UPackageMgr.Init("D:/downloads/l2c1/");
 	//UPackageMgr.Init("../../l2god/");
-	UPackageMgr.Init("../");
+	UPackageMgr.Init(g_cfg.getClientBaseDir());
 	//UPackageMgr.Init("D:/(WORK)/GoS/_l2_dev/_client/l2ct3_GoD/");
 
 	int16 map_x = 23;
@@ -116,11 +116,16 @@ void L2LevelManager::loadLevel(int map_x, int map_y)
 	//sprintf(buf, "%d_%d", map_x, map_y);
 
 	ULevel *level = UPackageMgr.GetULevel(buf);
+	if(!level)
+	{
+		MessageBoxA(0, "Map package was not found in the selected Lineage II client folder.", "Sedona L2 Map Viewer", MB_ICONWARNING);
+		loadingTilesCounter--;
+		if(loadingTilesCounter == 0)
+			g_ui.getL2Map()->onTilesLoaded();
+		return;
+	}
 
 	level->_mapLoc = _vector3((map_x - 20) * MAP_SIZE_X, 0, (map_y - 18) * MAP_SIZE_Z);
-
-	//if(!level)
-	//	return;
 
 	level->setL2LibVars(varsHolder);
 

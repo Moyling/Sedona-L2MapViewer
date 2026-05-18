@@ -1,5 +1,7 @@
 # Sedona-L2MapViewer
 
+> Prototype status: this repository is currently a working prototype, not a finished Sedona release. Client/profile launch support, runtime bootstrap, package decoding, and map loading are present, but in-app client selection, automatic geodata generation, and the full GUI workflow are still under active implementation.
+
 Sedona-L2MapViewer is a standalone Lineage II world/map viewer for inspecting client map packages, geometry, static meshes, textures, and L2J geodata from one desktop tool.
 
 It reads Lineage II client packages directly, loads map tiles on demand, renders the UE2/BSP world geometry and static meshes, and includes an upgraded package decoding path for protected client files.
@@ -15,6 +17,7 @@ build/Sedona-L2MapViewer.exe
 ## Running
 
 The executable expects a Lineage II client folder one level above the `build` folder.
+You can override that default with a launch argument or environment variable, which is the preferred mode when switching between H5, Fafurion, and Homunculus workspaces.
 
 Typical layout:
 
@@ -51,6 +54,32 @@ Controls:
 - Ctrl: move down
 - Menu -> Map: open the tile selector
 
+Client path override:
+
+```powershell
+.\build\Sedona-L2MapViewer.exe --client="C:\GITHUB\L2Modder_V2\Kliensek\Lineage II H5 Custom"
+.\build\Sedona-L2MapViewer.exe --client="C:\GITHUB\L2Modder_V2\Kliensek\FULL CLIENT LINEAGE2 FAFURION REV 166 EU"
+.\build\Sedona-L2MapViewer.exe --client="C:\GITHUB\L2Modder_V2\Kliensek\L2NAP286D20201216G269"
+.\build\Sedona-L2MapViewer.exe --profile=H5
+.\build\Sedona-L2MapViewer.exe --profile=Fafurion
+.\build\Sedona-L2MapViewer.exe --profile=Homonkulus
+```
+
+Profile launcher:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Launch-ClientProfile.ps1 -Profile H5
+powershell -ExecutionPolicy Bypass -File .\scripts\Launch-ClientProfile.ps1 -Profile Fafurion
+powershell -ExecutionPolicy Bypass -File .\scripts\Launch-ClientProfile.ps1 -Profile Homonkulus
+```
+
+Quick client scan:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Scan-Client.ps1 -Profile All
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientTiles.ps1 -Profile All
+```
+
 ## Supported Client Data
 
 The package loader scans:
@@ -71,7 +100,7 @@ The fallback decoder is searched in this order:
 3. `build/data/l2encdec/l2encdec.exe`
 4. known local `L2Modder_V2/L2FileEdit/data/l2encdec` paths
 
-The repository build includes:
+The bootstrap step installs:
 
 ```text
 build/data/l2encdec/l2encdec.exe
@@ -85,7 +114,15 @@ Prerequisites:
 
 - Visual Studio 2022 Build Tools with C++ workload
 - Windows 10 SDK
-- The bundled `deps/` folder
+- The local runtime/dependency folders created by `scripts/Bootstrap-Runtime.ps1`
+
+Bootstrap command for a fresh clone:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Bootstrap-Runtime.ps1
+```
+
+This restores the ignored `build/` runtime DLLs from the repository's `runtime/` folder. The full runtime DLL set is intentionally kept together because `MyGUIEngine.dll` requires the matching `freetype.dll` export `FT_Get_WinFNT_Header`; removing "unused-looking" DLLs can break startup on a clean machine.
 
 This workspace has been updated to use:
 

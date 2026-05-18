@@ -252,6 +252,11 @@ void UPackage::Open(char *fileName)
 	m_FileAddr = UTIL_CopyString(fileName);
 
 	_f = fopen(fileName, "rb");
+	if(!_f)
+	{
+		printf("ERROR: Cannot open package \"%s\"\r\n", fileName);
+		return;
+	}
 
 	int32 Signature;
 

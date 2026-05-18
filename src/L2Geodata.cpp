@@ -43,7 +43,7 @@ bool L2Geodata::Load(uint8 map_x, uint8 map_y)
 	_map_y = map_y;
 
 	char buf[256];
-	sprintf(buf, "../geodata/%d_%d.l2j", _map_x, _map_y);
+	g_cfg.makeGeodataPath(buf, sizeof(buf), _map_x, _map_y);
 
 	std::ifstream _f;
 	_f.open(buf, std::ios_base::binary);

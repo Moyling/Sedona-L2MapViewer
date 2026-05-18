@@ -129,7 +129,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\l2pointer.cur" />
-    <None Include="Resources\_01.aps" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\_01.rc" />

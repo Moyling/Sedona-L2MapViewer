@@ -198,6 +198,10 @@ void L2Window::_create()
 								g_hinst,							// Instance
 								NULL);								// Dont Pass Anything To WM_CREATE
 
+	char title[CM_SYSTEM_MAXNAME + 96];
+	g_cfg.makeWindowTitle(title, sizeof(title));
+	SetWindowTextA(g_hwnd, title);
+
 	static PIXELFORMATDESCRIPTOR pfd=				// pfd Tells Windows How We Want Things To Be
 	{
 		sizeof(PIXELFORMATDESCRIPTOR),				// Size Of This Pixel Format Descriptor

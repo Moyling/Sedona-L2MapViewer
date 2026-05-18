@@ -81,6 +81,8 @@ int WINAPI WinMain(	HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdlin
 
 	ZeroMemory(&msg, sizeof(msg));
 
+	g_cfg.InitFromCommandLine(lpcmdline);
+
 	if(!g_main.Init())
 		return 0;
 

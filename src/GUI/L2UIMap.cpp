@@ -112,6 +112,59 @@ void L2UIMap::onTilesLoaded()
 	g_ui.getL2BusyScreen()->setVisible(false);
 }
 
+void L2UIMap::loadTile(int mapX, int mapY)
+{
+	loadTileArea(mapX, mapY, 0);
+}
+
+void L2UIMap::loadTileArea(int centerX, int centerY, int radius)
+{
+	jfArray<L2MapTileInfo*, uint16> *tiles = new jfArray<L2MapTileInfo*, uint16>();
+	for(int x = centerX - radius; x <= centerX + radius; x++)
+	{
+		for(int y = centerY - radius; y <= centerY + radius; y++)
+		{
+			if(x < 10 || x >= MAP_TILES_X || y < 10 || y >= MAP_TILES_Y)
+				continue;
+
+			if(!ui_mapTiles[x][y])
+				continue;
+
+			uint16 tileState = getTileState(x, y);
+			if(tileState & L2UIMTS_ACTIVE)
+				continue;
+
+			L2MapTileInfo *tileInfo = new L2MapTileInfo();
+			tileInfo->map_x = x;
+			tileInfo->map_y = y;
+			tiles->add(tileInfo);
+			g_geo.Load(x, y);
+			setTileState(x, y, tileState | L2UIMTS_LOADED | L2UIMTS_ACTIVE);
+		}
+	}
+
+	loadQueuedTiles(tiles);
+}
+
+void L2UIMap::hideAllTiles()
+{
+	for(uint16 x = 10; x < MAP_TILES_X; x++)
+	{
+		for(uint16 y = 10; y < MAP_TILES_Y; y++)
+		{
+			if(!ui_mapTiles[x][y])
+				continue;
+
+			uint16 tileState = getTileState(x, y);
+			if(tileState & L2UIMTS_ACTIVE)
+			{
+				g_levelMgr.setLevelVisible(x, y, false);
+				setTileState(x, y, tileState & ~L2UIMTS_ACTIVE);
+			}
+		}
+	}
+}
+
 void L2UIMap::onMapMouseDown(MyGUI::Widget* sender, int x, int y, MyGUI::MouseButton btn)
 {
 	if(btn == MyGUI::MouseButton::Left)
@@ -247,6 +300,17 @@ void L2UIMap::onMapTileLoadClick(MyGUI::Widget* sender)
 
 	ui_mapTileLoad->setEnabled(false);
 	ui_mapTileHide->setEnabled(false);
+
+	loadQueuedTiles(tiles);
+}
+
+void L2UIMap::loadQueuedTiles(jfArray<L2MapTileInfo*, uint16> *tiles)
+{
+	if(tiles->Size() == 0)
+	{
+		delete tiles;
+		return;
+	}
 
 	g_ui.getL2BusyScreen()->setMessage(L"Loading tiles...");
 	g_ui.getL2BusyScreen()->setVisible(true);
