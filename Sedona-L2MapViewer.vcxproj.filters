@@ -10,6 +10,9 @@
     <ClCompile Include="src\editor\SedonaEditorModel.cpp">
       <Filter>src\editor</Filter>
     </ClCompile>
+    <ClCompile Include="src\geodata\SedonaGeodataWriter.cpp">
+      <Filter>src\geodata</Filter>
+    </ClCompile>
     <ClCompile Include="src\GUI\L2UIBaseWidget.cpp">
       <Filter>src\GUI</Filter>
     </ClCompile>
@@ -149,6 +152,9 @@
     </ClInclude>
     <ClInclude Include="src\editor\SedonaEditorModel.h">
       <Filter>src\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\geodata\SedonaGeodataWriter.h">
+      <Filter>src\geodata</Filter>
     </ClInclude>
     <ClInclude Include="src\GUI\L2UIBaseWidget.h">
       <Filter>src\GUI</Filter>
@@ -310,6 +316,9 @@
     </Filter>
     <Filter Include="src\editor">
       <UniqueIdentifier>{3f6f33f2-2371-4740-9f4f-44f53a996381}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\geodata">
+      <UniqueIdentifier>{ad4d2ac7-7780-4ded-b369-d6f2b68e628f}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\GUI">
       <UniqueIdentifier>{d2ece3b1-36aa-4a30-8fa2-6bdedb0d6b12}</UniqueIdentifier>
