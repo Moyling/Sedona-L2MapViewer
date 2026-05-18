@@ -28,6 +28,7 @@ public:
 	void onShowClientStatusClick(MyGUI::Widget* sender);
 	void onClientStatusWindowClose(MyGUI::Window* sender, const std::string& evt);
 	void onShowStagingReportClick(MyGUI::Widget* sender);
+	void onRefreshStagingCopyPreviewClick(MyGUI::Widget* sender);
 	void onStagingReportWindowClose(MyGUI::Window* sender, const std::string& evt);
 	void onProfileH5Click(MyGUI::Widget* sender);
 	void onProfileFafurionClick(MyGUI::Widget* sender);
@@ -52,6 +53,7 @@ protected:
 	MyGUI::TextBox *ui_clientStatusText;
 	MyGUI::Window *ui_stagingReportWnd;
 	MyGUI::TextBox *ui_stagingReportText;
+	MyGUI::Button *ui_refreshStagingCopyButton;
 	MyGUI::Button *ui_showMapButton;
 	MyGUI::Button *ui_loadDefaultButton;
 	MyGUI::Button *ui_loadAreaButton;

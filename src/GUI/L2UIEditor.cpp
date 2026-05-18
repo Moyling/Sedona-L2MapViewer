@@ -3,6 +3,155 @@
 #include "../main.h"
 #include "L2UIMap.h"
 #include <shlobj.h>
+#include <io.h>
+
+static bool FileExistsA(const char* path)
+{
+	return path && path[0] && _access(path, 0) == 0;
+}
+
+static void JoinPathA(char* out, size_t outSize, const char* left, const char* right)
+{
+	if(!out || outSize == 0)
+		return;
+
+	out[0] = 0;
+	if(!left || !right)
+		return;
+
+	strcpy_s(out, outSize, left);
+	size_t len = strlen(out);
+	if(len > 0 && out[len - 1] != '\\' && out[len - 1] != '/')
+		strcat_s(out, outSize, "\\");
+	strcat_s(out, outSize, right);
+}
+
+static bool FindStagedImportCopyScript(char* out, size_t outSize)
+{
+	if(!out || outSize == 0)
+		return false;
+
+	char moduleDir[CM_SYSTEM_MAXNAME];
+	GetModuleFileNameA(0, moduleDir, sizeof(moduleDir));
+	char* slash = strrchr(moduleDir, '\\');
+	if(slash)
+		*slash = 0;
+
+	const char* relativeCandidates[] = {
+		"..\\scripts\\Invoke-StagedImportCopy.ps1",
+		"scripts\\Invoke-StagedImportCopy.ps1",
+		"..\\..\\scripts\\Invoke-StagedImportCopy.ps1",
+		0
+	};
+
+	for(int i = 0; relativeCandidates[i]; i++)
+	{
+		char candidate[CM_SYSTEM_MAXNAME];
+		JoinPathA(candidate, sizeof(candidate), moduleDir, relativeCandidates[i]);
+		if(FileExistsA(candidate))
+		{
+			strcpy_s(out, outSize, candidate);
+			return true;
+		}
+	}
+
+	const char* absoluteCandidate = "C:\\GITHUB\\Sedona-L2MapViewer\\scripts\\Invoke-StagedImportCopy.ps1";
+	if(FileExistsA(absoluteCandidate))
+	{
+		strcpy_s(out, outSize, absoluteCandidate);
+		return true;
+	}
+
+	return false;
+}
+
+static std::string RunCommandCapture(const char* commandLine, DWORD timeoutMs, DWORD* exitCode)
+{
+	if(exitCode)
+		*exitCode = 1;
+
+	SECURITY_ATTRIBUTES sa;
+	ZeroMemory(&sa, sizeof(sa));
+	sa.nLength = sizeof(sa);
+	sa.bInheritHandle = TRUE;
+
+	HANDLE readPipe = 0;
+	HANDLE writePipe = 0;
+	if(!CreatePipe(&readPipe, &writePipe, &sa, 0))
+		return "Could not create output pipe.";
+	SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
+
+	STARTUPINFOA si;
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&si, sizeof(si));
+	ZeroMemory(&pi, sizeof(pi));
+	si.cb = sizeof(si);
+	si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+	si.wShowWindow = SW_HIDE;
+	si.hStdOutput = writePipe;
+	si.hStdError = writePipe;
+
+	char mutableCommand[4096];
+	strcpy_s(mutableCommand, sizeof(mutableCommand), commandLine);
+
+	if(!CreateProcessA(0, mutableCommand, 0, 0, TRUE, CREATE_NO_WINDOW, 0, 0, &si, &pi))
+	{
+		CloseHandle(writePipe);
+		CloseHandle(readPipe);
+		return "Could not start PowerShell preview command.";
+	}
+
+	CloseHandle(writePipe);
+
+	std::string output;
+	DWORD startTick = GetTickCount();
+	bool processDone = false;
+	char buffer[1024];
+
+	while(!processDone)
+	{
+		DWORD available = 0;
+		if(PeekNamedPipe(readPipe, 0, 0, 0, &available, 0) && available > 0)
+		{
+			DWORD readBytes = 0;
+			if(ReadFile(readPipe, buffer, min((DWORD)sizeof(buffer) - 1, available), &readBytes, 0) && readBytes > 0)
+			{
+				buffer[readBytes] = 0;
+				output += buffer;
+			}
+		}
+		else
+		{
+			DWORD waitResult = WaitForSingleObject(pi.hProcess, 50);
+			processDone = waitResult == WAIT_OBJECT_0;
+			if(!processDone && GetTickCount() - startTick > timeoutMs)
+			{
+				TerminateProcess(pi.hProcess, 1);
+				output += "\nPreview command timed out.";
+				processDone = true;
+			}
+		}
+	}
+
+	for(;;)
+	{
+		DWORD readBytes = 0;
+		if(!ReadFile(readPipe, buffer, sizeof(buffer) - 1, &readBytes, 0) || readBytes == 0)
+			break;
+		buffer[readBytes] = 0;
+		output += buffer;
+	}
+
+	DWORD processExit = 1;
+	GetExitCodeProcess(pi.hProcess, &processExit);
+	if(exitCode)
+		*exitCode = processExit;
+
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+	CloseHandle(readPipe);
+	return output;
+}
 
 static int CountFilesInFolder(const char* root, const char* folder, const char* pattern)
 {
@@ -125,6 +274,7 @@ L2UIEditor::L2UIEditor()
 	ui_clientStatusText = 0;
 	ui_stagingReportWnd = 0;
 	ui_stagingReportText = 0;
+	ui_refreshStagingCopyButton = 0;
 	ui_showMapButton = 0;
 	ui_loadDefaultButton = 0;
 	ui_loadAreaButton = 0;
@@ -237,7 +387,10 @@ void L2UIEditor::Init()
 	ui_stagingReportWnd = MyGUI::Gui::getInstance().createWidget<MyGUI::Window>("WindowCSX", 128, 82, 680, 430, MyGUI::Align::Default, "L2WindowsLayer", "StagingReportWnd");
 	ui_stagingReportWnd->setCaption(L"Asset Staging Report");
 	ui_stagingReportWnd->eventWindowButtonPressed += MyGUI::newDelegate(this, &L2UIEditor::onStagingReportWindowClose);
-	ui_stagingReportText = ui_stagingReportWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 656, 396, MyGUI::Align::Stretch, "StagingReportText");
+	ui_stagingReportText = ui_stagingReportWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 656, 352, MyGUI::Align::Stretch, "StagingReportText");
+	ui_refreshStagingCopyButton = ui_stagingReportWnd->createWidget<MyGUI::Button>("Button", 12, 372, 180, 28, MyGUI::Align::Left | MyGUI::Align::Bottom, "RefreshStagingCopyBtn");
+	ui_refreshStagingCopyButton->setCaption(L"Refresh copy preview");
+	ui_refreshStagingCopyButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onRefreshStagingCopyPreviewClick);
 	ui_stagingReportWnd->setVisible(false);
 
 	refreshStatusText();
@@ -426,6 +579,44 @@ void L2UIEditor::onShowStagingReportClick(MyGUI::Widget* sender)
 	refreshStagingReportText();
 	MyGUI::LayerManager::getInstance().upLayerItem(ui_stagingReportWnd);
 	ui_stagingReportWnd->setVisible(true);
+}
+
+void L2UIEditor::onRefreshStagingCopyPreviewClick(MyGUI::Widget* sender)
+{
+	if(!ui_stagingReportText)
+		return;
+
+	char scriptPath[CM_SYSTEM_MAXNAME];
+	if(!FindStagedImportCopyScript(scriptPath, sizeof(scriptPath)))
+	{
+		ui_stagingReportText->setCaption("Invoke-StagedImportCopy.ps1 was not found beside the repo scripts folder.");
+		return;
+	}
+
+	char command[4096];
+	sprintf_s(command, sizeof(command),
+		"powershell -NoProfile -ExecutionPolicy Bypass -File \"%s\" -TargetProfile %s -DonorProfile %s -Kind Maps -Package 23_22.unr -StagingPath \"%s\" -Limit 250",
+		scriptPath,
+		g_cfg.getClientProfileName(),
+		g_cfg.getDonorProfileName(),
+		g_cfg.getAssetStagingDir());
+
+	ui_stagingReportText->setCaption("Running dry-run copy preview...");
+	DWORD exitCode = 1;
+	std::string output = RunCommandCapture(command, 30000, &exitCode);
+	std::string report = "Dry-run staging copy preview for Maps/23_22.unr\n";
+	report += "No files are copied from this button. Use the script with -Execute when the plan is correct.\n\n";
+	report += output;
+	if(exitCode != 0)
+	{
+		report += "\nPreview command failed with exit code ";
+		char code[32];
+		sprintf_s(code, sizeof(code), "%lu", exitCode);
+		report += code;
+		report += ".";
+	}
+
+	ui_stagingReportText->setCaption(MyGUI::UString(report.c_str()));
 }
 
 void L2UIEditor::onStagingReportWindowClose(MyGUI::Window* sender, const std::string& evt)

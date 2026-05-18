@@ -76,11 +76,11 @@ Sedona should become a Lineage II map builder, not only a map viewer.
 - [x] Add dry-run copy manifest generation for packages marked `NeedsStaging`.
 - [x] Guard the Java asset probe wrapper against concurrent compile races.
 - [x] Add opt-in staging copy command guarded by the dry-run manifest.
+- [x] Add staged import copy report to the GUI preview flow.
 
 ## Next
 
 - [ ] Add recent-client history behind the top Client menu.
-- [ ] Add staged import copy report to the GUI preview flow.
 - [ ] Design the editor data model: original map data, staged edits, imported assets, generated geodata.
 - [ ] Implement a Sedona geodata writer from the Mobius `Region`/`IBlock` layout.
 - [ ] Wrap `L2AssetViewer` texture export tools as Sedona texture preview probes.
