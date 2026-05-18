@@ -69,11 +69,12 @@ Sedona should become a Lineage II map builder, not only a map viewer.
 - [x] Add top-menu target and donor profile presets for H5, Fafurion, and Homonkulus.
 - [x] Add top-menu asset staging folder selector for cross-client import/export preparation.
 - [x] Add asset staging report script before real client file copying is implemented.
+- [x] Connect an on-demand GUI staging report preview to the top Client menu.
 
 ## Next
 
 - [ ] Add recent-client history behind the top Client menu.
-- [ ] Connect the asset staging report to an on-demand GUI preview window.
+- [ ] Add package-level staging report details and dependency warnings.
 - [ ] Design the editor data model: original map data, staged edits, imported assets, generated geodata.
 - [ ] Implement a Sedona geodata writer from the Mobius `Region`/`IBlock` layout.
 - [ ] Wrap `L2AssetViewer` texture export tools as Sedona texture preview probes.

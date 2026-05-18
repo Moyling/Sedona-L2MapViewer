@@ -4,6 +4,65 @@
 #include "L2UIMap.h"
 #include <shlobj.h>
 
+static int CountFilesInFolder(const char* root, const char* folder, const char* pattern)
+{
+	if(!root || !folder || !pattern || !root[0])
+		return 0;
+
+	char searchPath[CM_SYSTEM_MAXNAME];
+	sprintf_s(searchPath, sizeof(searchPath), "%s%s/%s", root, folder, pattern);
+
+	WIN32_FIND_DATAA findData;
+	HANDLE findHandle = FindFirstFileA(searchPath, &findData);
+	if(findHandle == INVALID_HANDLE_VALUE)
+		return 0;
+
+	int count = 0;
+	do
+	{
+		if(!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			count++;
+	}
+	while(FindNextFileA(findHandle, &findData));
+
+	FindClose(findHandle);
+	return count;
+}
+
+static int CountFilesRecursive(const char* root)
+{
+	if(!root || !root[0])
+		return 0;
+
+	char searchPath[CM_SYSTEM_MAXNAME];
+	sprintf_s(searchPath, sizeof(searchPath), "%s*", root);
+
+	WIN32_FIND_DATAA findData;
+	HANDLE findHandle = FindFirstFileA(searchPath, &findData);
+	if(findHandle == INVALID_HANDLE_VALUE)
+		return 0;
+
+	int count = 0;
+	do
+	{
+		if(strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0)
+			continue;
+
+		if(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			char childPath[CM_SYSTEM_MAXNAME];
+			sprintf_s(childPath, sizeof(childPath), "%s%s/", root, findData.cFileName);
+			count += CountFilesRecursive(childPath);
+		}
+		else
+			count++;
+	}
+	while(FindNextFileA(findHandle, &findData));
+
+	FindClose(findHandle);
+	return count;
+}
+
 static char* LoadTextFile(const char* path)
 {
 	FILE *file = fopen(path, "rb");
@@ -28,6 +87,8 @@ L2UIEditor::L2UIEditor()
 	ui_statusText = 0;
 	ui_clientStatusWnd = 0;
 	ui_clientStatusText = 0;
+	ui_stagingReportWnd = 0;
+	ui_stagingReportText = 0;
 	ui_showMapButton = 0;
 	ui_loadDefaultButton = 0;
 	ui_loadAreaButton = 0;
@@ -71,6 +132,8 @@ void L2UIEditor::Init()
 	ui_topMenu_Client_AssetStaging->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectAssetStagingClick);
 	MyGUI::MenuItem *ui_topMenu_Client_Status = ui_topMenu_ClientMenu->addItem(L"Show client status", MyGUI::MenuItemType::Normal, "TopMenu_Client_Status");
 	ui_topMenu_Client_Status->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowClientStatusClick);
+	MyGUI::MenuItem *ui_topMenu_Client_StagingReport = ui_topMenu_ClientMenu->addItem(L"Show staging report", MyGUI::MenuItemType::Normal, "TopMenu_Client_StagingReport");
+	ui_topMenu_Client_StagingReport->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowStagingReportClick);
 	ui_topMenu_ClientMenu->addItem("", MyGUI::MenuItemType::Separator);
 	MyGUI::MenuItem *ui_topMenu_Client_H5 = ui_topMenu_ClientMenu->addItem(L"Target profile: H5", MyGUI::MenuItemType::Normal, "TopMenu_Client_H5");
 	ui_topMenu_Client_H5->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileH5Click);
@@ -135,14 +198,22 @@ void L2UIEditor::Init()
 	ui_clientStatusText = ui_clientStatusWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 536, 226, MyGUI::Align::Stretch, "ClientStatusText");
 	ui_clientStatusWnd->setVisible(false);
 
+	ui_stagingReportWnd = MyGUI::Gui::getInstance().createWidget<MyGUI::Window>("WindowCSX", 128, 82, 560, 330, MyGUI::Align::Default, "L2WindowsLayer", "StagingReportWnd");
+	ui_stagingReportWnd->setCaption(L"Asset Staging Report");
+	ui_stagingReportWnd->eventWindowButtonPressed += MyGUI::newDelegate(this, &L2UIEditor::onStagingReportWindowClose);
+	ui_stagingReportText = ui_stagingReportWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 536, 296, MyGUI::Align::Stretch, "StagingReportText");
+	ui_stagingReportWnd->setVisible(false);
+
 	refreshStatusText();
 	refreshClientStatusText();
+	refreshStagingReportText();
 }
 
 void L2UIEditor::update()
 {
 	refreshStatusText();
 	refreshClientStatusText();
+	refreshStagingReportText();
 }
 
 void L2UIEditor::onResize(int width, int height)
@@ -313,6 +384,22 @@ void L2UIEditor::onClientStatusWindowClose(MyGUI::Window* sender, const std::str
 		ui_clientStatusWnd->setVisible(false);
 }
 
+void L2UIEditor::onShowStagingReportClick(MyGUI::Widget* sender)
+{
+	if(!ui_stagingReportWnd)
+		return;
+
+	refreshStagingReportText();
+	MyGUI::LayerManager::getInstance().upLayerItem(ui_stagingReportWnd);
+	ui_stagingReportWnd->setVisible(true);
+}
+
+void L2UIEditor::onStagingReportWindowClose(MyGUI::Window* sender, const std::string& evt)
+{
+	if(ui_stagingReportWnd)
+		ui_stagingReportWnd->setVisible(false);
+}
+
 void L2UIEditor::onProfileH5Click(MyGUI::Widget* sender)
 {
 	restartWithProfile("H5");
@@ -383,4 +470,41 @@ void L2UIEditor::refreshClientStatusText()
 	char status[4096];
 	sprintf_s(status, sizeof(status), "Target profile: %s\nTarget client:\n%s\n\nDonor profile: %s\nDonor client:\n%s\n\nGeodata input:\n%s\n\nGeodata export:\n%s\n\nAsset staging:\n%s", g_cfg.getClientProfileName(), g_cfg.getClientBaseDir(), g_cfg.getDonorProfileName(), g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
 	ui_clientStatusText->setCaption(MyGUI::UString(status));
+}
+
+void L2UIEditor::refreshStagingReportText()
+{
+	if(!ui_stagingReportText)
+		return;
+
+	const char* target = g_cfg.getClientBaseDir();
+	const char* donor = g_cfg.getDonorClientBaseDir();
+	int targetMaps = CountFilesInFolder(target, "Maps", "*.unr");
+	int donorMaps = CountFilesInFolder(donor, "Maps", "*.unr");
+	int targetMeshes = CountFilesInFolder(target, "StaticMeshes", "*.usx");
+	int donorMeshes = CountFilesInFolder(donor, "StaticMeshes", "*.usx");
+	int targetSysTextures = CountFilesInFolder(target, "SysTextures", "*.utx");
+	int donorSysTextures = CountFilesInFolder(donor, "SysTextures", "*.utx");
+	int targetTextures = CountFilesInFolder(target, "Textures", "*.utx");
+	int donorTextures = CountFilesInFolder(donor, "Textures", "*.utx");
+	int targetAnimations = CountFilesInFolder(target, "Animations", "*.ukx");
+	int donorAnimations = CountFilesInFolder(donor, "Animations", "*.ukx");
+	int targetSounds = CountFilesInFolder(target, "Sounds", "*.uax");
+	int donorSounds = CountFilesInFolder(donor, "Sounds", "*.uax");
+	int targetSystem = CountFilesInFolder(target, "system", "*.dat");
+	int donorSystem = CountFilesInFolder(donor, "system", "*.dat");
+	int stagedFiles = CountFilesRecursive(g_cfg.getAssetStagingDir());
+
+	char status[4096];
+	sprintf_s(status, sizeof(status),
+		"Target: %s\nDonor: %s\nStaging files: %d\n\nKind             Target  Donor\nMaps             %6d %6d\nStaticMeshes     %6d %6d\nSysTextures      %6d %6d\nTextures         %6d %6d\nAnimations       %6d %6d\nSounds           %6d %6d\nSystem dat       %6d %6d\n\nPreview only: no client files are copied yet.",
+		g_cfg.getClientProfileName(), g_cfg.getDonorProfileName(), stagedFiles,
+		targetMaps, donorMaps,
+		targetMeshes, donorMeshes,
+		targetSysTextures, donorSysTextures,
+		targetTextures, donorTextures,
+		targetAnimations, donorAnimations,
+		targetSounds, donorSounds,
+		targetSystem, donorSystem);
+	ui_stagingReportText->setCaption(MyGUI::UString(status));
 }
