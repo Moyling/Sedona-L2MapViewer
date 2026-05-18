@@ -1,8 +1,8 @@
 # Sedona-L2MapViewer
 
-Lineage II map viewer based on the original `justgos/l2mapper` codebase.
+Sedona-L2MapViewer is a standalone Lineage II world/map viewer for inspecting client map packages, geometry, static meshes, textures, and L2J geodata from one desktop tool.
 
-The viewer reads Lineage II client packages directly, loads map tiles, renders the UE2/BSP world geometry and static meshes, and can overlay L2J geodata.
+It reads Lineage II client packages directly, loads map tiles on demand, renders the UE2/BSP world geometry and static meshes, and includes an upgraded package decoding path for protected client files.
 
 ## Current Build
 
@@ -62,7 +62,7 @@ Textures/*.utx
 StaticMeshes/*.usx
 ```
 
-Package decoding supports the original XOR-protected Lineage package header internally. For newer protected files, the viewer falls back to `l2encdec.exe` when available.
+Package decoding supports XOR-protected Lineage package headers internally. For newer protected files, including RSA/zlib-protected client data, the viewer falls back to `l2encdec.exe` when available.
 
 The fallback decoder is searched in this order:
 
@@ -85,13 +85,14 @@ Prerequisites:
 
 - Visual Studio 2022 Build Tools with C++ workload
 - Windows 10 SDK
-- The `deps/` folder from the original `l2mapper` release
+- The bundled `deps/` folder
 
 This workspace has been updated to use:
 
 - MSVC toolset: `v143`
 - Windows SDK: `10.0`
 - local dependency paths under `deps/`
+- executable target name: `Sedona-L2MapViewer.exe`
 
 Build command:
 
@@ -112,11 +113,7 @@ Known non-fatal linker warnings:
 
 ## Notes
 
-This is old UE2-era code. The renderer uses legacy OpenGL and immediate mode in several places. The parser is practical rather than complete: it focuses on Lineage II package/object/material types needed by the map viewer.
-
-Original upstream:
-
-- https://github.com/justgos/l2mapper
+The renderer still uses legacy OpenGL in several places because Lineage II's map assets are UE2-era data, but the project build, package loading, executable naming, and decoder integration have been upgraded for the Sedona toolchain.
 
 ## Gallery
 
