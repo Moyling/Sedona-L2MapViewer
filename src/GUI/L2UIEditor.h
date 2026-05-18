@@ -24,11 +24,14 @@ public:
 	void onSelectClientClick(MyGUI::Widget* sender);
 	void onSelectDonorClick(MyGUI::Widget* sender);
 	void onSelectGeodataExportClick(MyGUI::Widget* sender);
+	void onShowClientStatusClick(MyGUI::Widget* sender);
+	void onClientStatusWindowClose(MyGUI::Window* sender, const std::string& evt);
 	void onProfileH5Click(MyGUI::Widget* sender);
 	void onProfileFafurionClick(MyGUI::Widget* sender);
 	void onProfileHomonkulusClick(MyGUI::Widget* sender);
 protected:
 	void refreshStatusText();
+	void refreshClientStatusText();
 	void restartWithArguments(const char* arguments);
 	void restartWithProfile(const char* profile);
 
@@ -37,6 +40,8 @@ protected:
 	MyGUI::Button *ui_sceneShowBsp;
 	MyGUI::Window *ui_toolsWnd;
 	MyGUI::TextBox *ui_statusText;
+	MyGUI::Window *ui_clientStatusWnd;
+	MyGUI::TextBox *ui_clientStatusText;
 	MyGUI::Button *ui_showMapButton;
 	MyGUI::Button *ui_loadDefaultButton;
 	MyGUI::Button *ui_loadAreaButton;

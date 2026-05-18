@@ -26,6 +26,8 @@ L2UIEditor::L2UIEditor()
 {
 	ui_toolsWnd = 0;
 	ui_statusText = 0;
+	ui_clientStatusWnd = 0;
+	ui_clientStatusText = 0;
 	ui_showMapButton = 0;
 	ui_loadDefaultButton = 0;
 	ui_loadAreaButton = 0;
@@ -65,6 +67,8 @@ void L2UIEditor::Init()
 	ui_topMenu_Client_Donor->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectDonorClick);
 	MyGUI::MenuItem *ui_topMenu_Client_GeoExport = ui_topMenu_ClientMenu->addItem(L"Select geodata export...", MyGUI::MenuItemType::Normal, "TopMenu_Client_GeoExport");
 	ui_topMenu_Client_GeoExport->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectGeodataExportClick);
+	MyGUI::MenuItem *ui_topMenu_Client_Status = ui_topMenu_ClientMenu->addItem(L"Show client status", MyGUI::MenuItemType::Normal, "TopMenu_Client_Status");
+	ui_topMenu_Client_Status->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowClientStatusClick);
 	ui_topMenu_ClientMenu->addItem("", MyGUI::MenuItemType::Separator);
 	MyGUI::MenuItem *ui_topMenu_Client_H5 = ui_topMenu_ClientMenu->addItem(L"Profile: H5", MyGUI::MenuItemType::Normal, "TopMenu_Client_H5");
 	ui_topMenu_Client_H5->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileH5Click);
@@ -115,12 +119,21 @@ void L2UIEditor::Init()
 	ui_sceneShowBsp = ui_toolsWnd->createWidget<MyGUI::Button>("CheckBox", 12, 212, 150, 20, MyGUI::Align::Default, "ShowBsp");
 	ui_sceneShowBsp->setCaption(L"Draw BSP");
 	ui_sceneShowBsp->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowBspMouseClick);
+
+	ui_clientStatusWnd = MyGUI::Gui::getInstance().createWidget<MyGUI::Window>("WindowCSX", 96, 58, 560, 260, MyGUI::Align::Default, "L2WindowsLayer", "ClientStatusWnd");
+	ui_clientStatusWnd->setCaption(L"Client Status");
+	ui_clientStatusWnd->eventWindowButtonPressed += MyGUI::newDelegate(this, &L2UIEditor::onClientStatusWindowClose);
+	ui_clientStatusText = ui_clientStatusWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 536, 226, MyGUI::Align::Stretch, "ClientStatusText");
+	ui_clientStatusWnd->setVisible(false);
+
 	refreshStatusText();
+	refreshClientStatusText();
 }
 
 void L2UIEditor::update()
 {
 	refreshStatusText();
+	refreshClientStatusText();
 }
 
 void L2UIEditor::onResize(int width, int height)
@@ -252,6 +265,22 @@ void L2UIEditor::onSelectGeodataExportClick(MyGUI::Widget* sender)
 	CoTaskMemFree(itemList);
 }
 
+void L2UIEditor::onShowClientStatusClick(MyGUI::Widget* sender)
+{
+	if(!ui_clientStatusWnd)
+		return;
+
+	refreshClientStatusText();
+	MyGUI::LayerManager::getInstance().upLayerItem(ui_clientStatusWnd);
+	ui_clientStatusWnd->setVisible(true);
+}
+
+void L2UIEditor::onClientStatusWindowClose(MyGUI::Window* sender, const std::string& evt)
+{
+	if(ui_clientStatusWnd)
+		ui_clientStatusWnd->setVisible(false);
+}
+
 void L2UIEditor::onProfileH5Click(MyGUI::Widget* sender)
 {
 	restartWithProfile("H5");
@@ -290,4 +319,14 @@ void L2UIEditor::refreshStatusText()
 	char status[512];
 	sprintf_s(status, sizeof(status), "Target: %s\nDonor: %s\nUse Client menu for paths.", g_cfg.getClientProfileName(), g_cfg.getDonorProfileName());
 	ui_statusText->setCaption(MyGUI::UString(status));
+}
+
+void L2UIEditor::refreshClientStatusText()
+{
+	if(!ui_clientStatusText)
+		return;
+
+	char status[4096];
+	sprintf_s(status, sizeof(status), "Target profile: %s\nTarget client:\n%s\n\nDonor profile: %s\nDonor client:\n%s\n\nGeodata input:\n%s\n\nGeodata export:\n%s\n\nAsset staging:\n%s", g_cfg.getClientProfileName(), g_cfg.getClientBaseDir(), g_cfg.getDonorProfileName(), g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
+	ui_clientStatusText->setCaption(MyGUI::UString(status));
 }

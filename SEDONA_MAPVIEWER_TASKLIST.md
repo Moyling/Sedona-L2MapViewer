@@ -65,10 +65,11 @@ Sedona should become a Lineage II map builder, not only a map viewer.
 - [x] Add geodata export output path to config and GUI.
 - [x] Move client, donor, export, and profile controls into the top Client menu.
 - [x] Keep the separate Editor Tools window focused on map/editor actions.
+- [x] Add on-demand Client Status window so long paths do not occupy the workspace.
 
 ## Next
 
-- [ ] Add recent-client history and saved profile presets to the top Client menu.
+- [ ] Add recent-client history and saved profile presets behind the top Client menu.
 - [ ] Design the editor data model: original map data, staged edits, imported assets, generated geodata.
 - [ ] Implement a Sedona geodata writer from the Mobius `Region`/`IBlock` layout.
 - [ ] Wrap `L2AssetViewer` texture export tools as Sedona texture preview probes.
