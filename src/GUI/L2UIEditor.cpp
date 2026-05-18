@@ -63,6 +63,42 @@ static int CountFilesRecursive(const char* root)
 	return count;
 }
 
+static void FindLargestFileInFolder(const char* root, const char* folder, const char* pattern, char* fileName, size_t fileNameSize, double* sizeMb)
+{
+	if(fileName && fileNameSize > 0)
+		fileName[0] = 0;
+	if(sizeMb)
+		*sizeMb = 0.0;
+	if(!root || !folder || !pattern || !root[0] || !fileName || fileNameSize == 0 || !sizeMb)
+		return;
+
+	char searchPath[CM_SYSTEM_MAXNAME];
+	sprintf_s(searchPath, sizeof(searchPath), "%s%s/%s", root, folder, pattern);
+
+	WIN32_FIND_DATAA findData;
+	HANDLE findHandle = FindFirstFileA(searchPath, &findData);
+	if(findHandle == INVALID_HANDLE_VALUE)
+		return;
+
+	ULONGLONG largestSize = 0;
+	do
+	{
+		if(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			continue;
+
+		ULONGLONG fileSize = (((ULONGLONG)findData.nFileSizeHigh) << 32) | findData.nFileSizeLow;
+		if(fileSize > largestSize)
+		{
+			largestSize = fileSize;
+			strcpy_s(fileName, fileNameSize, findData.cFileName);
+		}
+	}
+	while(FindNextFileA(findHandle, &findData));
+
+	FindClose(findHandle);
+	*sizeMb = (double)largestSize / (1024.0 * 1024.0);
+}
+
 static char* LoadTextFile(const char* path)
 {
 	FILE *file = fopen(path, "rb");
@@ -198,22 +234,20 @@ void L2UIEditor::Init()
 	ui_clientStatusText = ui_clientStatusWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 536, 226, MyGUI::Align::Stretch, "ClientStatusText");
 	ui_clientStatusWnd->setVisible(false);
 
-	ui_stagingReportWnd = MyGUI::Gui::getInstance().createWidget<MyGUI::Window>("WindowCSX", 128, 82, 560, 330, MyGUI::Align::Default, "L2WindowsLayer", "StagingReportWnd");
+	ui_stagingReportWnd = MyGUI::Gui::getInstance().createWidget<MyGUI::Window>("WindowCSX", 128, 82, 680, 430, MyGUI::Align::Default, "L2WindowsLayer", "StagingReportWnd");
 	ui_stagingReportWnd->setCaption(L"Asset Staging Report");
 	ui_stagingReportWnd->eventWindowButtonPressed += MyGUI::newDelegate(this, &L2UIEditor::onStagingReportWindowClose);
-	ui_stagingReportText = ui_stagingReportWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 536, 296, MyGUI::Align::Stretch, "StagingReportText");
+	ui_stagingReportText = ui_stagingReportWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 656, 396, MyGUI::Align::Stretch, "StagingReportText");
 	ui_stagingReportWnd->setVisible(false);
 
 	refreshStatusText();
 	refreshClientStatusText();
-	refreshStagingReportText();
 }
 
 void L2UIEditor::update()
 {
 	refreshStatusText();
 	refreshClientStatusText();
-	refreshStagingReportText();
 }
 
 void L2UIEditor::onResize(int width, int height)
@@ -494,10 +528,41 @@ void L2UIEditor::refreshStagingReportText()
 	int targetSystem = CountFilesInFolder(target, "system", "*.dat");
 	int donorSystem = CountFilesInFolder(donor, "system", "*.dat");
 	int stagedFiles = CountFilesRecursive(g_cfg.getAssetStagingDir());
+	char largestMap[128];
+	char largestMesh[128];
+	char largestSysTexture[128];
+	char largestTexture[128];
+	char largestAnimation[128];
+	char largestSound[128];
+	double largestMapMb;
+	double largestMeshMb;
+	double largestSysTextureMb;
+	double largestTextureMb;
+	double largestAnimationMb;
+	double largestSoundMb;
+	FindLargestFileInFolder(donor, "Maps", "*.unr", largestMap, sizeof(largestMap), &largestMapMb);
+	FindLargestFileInFolder(donor, "StaticMeshes", "*.usx", largestMesh, sizeof(largestMesh), &largestMeshMb);
+	FindLargestFileInFolder(donor, "SysTextures", "*.utx", largestSysTexture, sizeof(largestSysTexture), &largestSysTextureMb);
+	FindLargestFileInFolder(donor, "Textures", "*.utx", largestTexture, sizeof(largestTexture), &largestTextureMb);
+	FindLargestFileInFolder(donor, "Animations", "*.ukx", largestAnimation, sizeof(largestAnimation), &largestAnimationMb);
+	FindLargestFileInFolder(donor, "Sounds", "*.uax", largestSound, sizeof(largestSound), &largestSoundMb);
+
+	char warnings[512];
+	warnings[0] = 0;
+	if(donorMaps + donorMeshes + donorSysTextures + donorTextures + donorAnimations + donorSounds + donorSystem == 0)
+		strcat_s(warnings, sizeof(warnings), "Warning: donor client has no visible supported packages.\n");
+	if(targetMaps + targetMeshes + targetSysTextures + targetTextures + targetAnimations + targetSounds + targetSystem == 0)
+		strcat_s(warnings, sizeof(warnings), "Warning: target client has no visible supported packages.\n");
+	if(stagedFiles == 0)
+		strcat_s(warnings, sizeof(warnings), "Warning: staging folder is empty or missing.\n");
+	if(_stricmp(g_cfg.getClientBaseDir(), g_cfg.getDonorClientBaseDir()) == 0)
+		strcat_s(warnings, sizeof(warnings), "Warning: target and donor client paths are identical.\n");
+	if(warnings[0] == 0)
+		strcpy_s(warnings, sizeof(warnings), "No blocking warnings in this preview.\n");
 
 	char status[4096];
 	sprintf_s(status, sizeof(status),
-		"Target: %s\nDonor: %s\nStaging files: %d\n\nKind             Target  Donor\nMaps             %6d %6d\nStaticMeshes     %6d %6d\nSysTextures      %6d %6d\nTextures         %6d %6d\nAnimations       %6d %6d\nSounds           %6d %6d\nSystem dat       %6d %6d\n\nPreview only: no client files are copied yet.",
+		"Target: %s\nDonor: %s\nStaging files: %d\n\nKind             Target  Donor\nMaps             %6d %6d\nStaticMeshes     %6d %6d\nSysTextures      %6d %6d\nTextures         %6d %6d\nAnimations       %6d %6d\nSounds           %6d %6d\nSystem dat       %6d %6d\n\nLargest donor candidates\nMap:        %s (%.2f MB)\nStaticMesh: %s (%.2f MB)\nSysTexture: %s (%.2f MB)\nTexture:    %s (%.2f MB)\nAnimation:  %s (%.2f MB)\nSound:      %s (%.2f MB)\n\n%s\nPreview only: no client files are copied yet.",
 		g_cfg.getClientProfileName(), g_cfg.getDonorProfileName(), stagedFiles,
 		targetMaps, donorMaps,
 		targetMeshes, donorMeshes,
@@ -505,6 +570,13 @@ void L2UIEditor::refreshStagingReportText()
 		targetTextures, donorTextures,
 		targetAnimations, donorAnimations,
 		targetSounds, donorSounds,
-		targetSystem, donorSystem);
+		targetSystem, donorSystem,
+		largestMap, largestMapMb,
+		largestMesh, largestMeshMb,
+		largestSysTexture, largestSysTextureMb,
+		largestTexture, largestTextureMb,
+		largestAnimation, largestAnimationMb,
+		largestSound, largestSoundMb,
+		warnings);
 	ui_stagingReportText->setCaption(MyGUI::UString(status));
 }
