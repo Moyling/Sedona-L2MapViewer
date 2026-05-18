@@ -42,6 +42,7 @@ function Get-PackageHeader {
         return [pscustomobject]@{
             Exists = $false
             Kind = "missing"
+            Protection = ""
             Signature = ""
             Version = $null
         }
@@ -59,6 +60,7 @@ function Get-PackageHeader {
         return [pscustomobject]@{
             Exists = $true
             Kind = "too-small"
+            Protection = ""
             Signature = ""
             Version = $null
         }
@@ -69,6 +71,14 @@ function Get-PackageHeader {
     $wideLineage = $bytesRead -ge 22 -and
         $bytes[0] -eq 0x4c -and $bytes[1] -eq 0x00 -and
         $bytes[2] -eq 0x69 -and $bytes[3] -eq 0x00
+    $protection = ""
+    if ($wideLineage) {
+        $headerText = [Text.Encoding]::Unicode.GetString($bytes)
+        $match = [regex]::Match($headerText, "Lineage2Ver\d+")
+        if ($match.Success) {
+            $protection = $match.Value
+        }
+    }
 
     $kind = if ($signature -eq -1641389119) {
         "unreal-package"
@@ -81,6 +91,7 @@ function Get-PackageHeader {
     [pscustomobject]@{
         Exists = $true
         Kind = $kind
+        Protection = $protection
         Signature = ("0x{0:X8}" -f ($signature -band 0xffffffff))
         Version = $version
     }
@@ -132,7 +143,9 @@ function Test-ProfileTiles {
         $header = Get-PackageHeader -Path $mapPath
         $decode = "not-needed"
 
-        if ($header.Kind -eq "lineage-protected") {
+        if ($header.Kind -eq "lineage-protected" -and $header.Protection -in @("Lineage2Ver111", "Lineage2Ver120", "Lineage2Ver121", "Lineage2Ver211", "Lineage2Ver212")) {
+            $decode = "internal-xor"
+        } elseif ($header.Kind -eq "lineage-protected") {
             $decode = Test-Decode -SourcePath $mapPath -DecoderPath $decoder
         } elseif (!$header.Exists) {
             $decode = "missing"
@@ -145,10 +158,11 @@ function Test-ProfileTiles {
             Tile = $tile
             MapPath = $mapPath
             Header = $header.Kind
+            Protection = $header.Protection
             Signature = $header.Signature
             Version = $header.Version
             Decode = $decode
-            Ready = ($header.Kind -eq "unreal-package" -or $decode -eq "decoded")
+            Ready = ($header.Kind -eq "unreal-package" -or $decode -eq "decoded" -or $decode -eq "internal-xor")
         }
     }
 }
@@ -158,9 +172,9 @@ if ($Profile -eq "All") {
         Test-ProfileTiles -Name "H5" -ClientPath $profiles.H5
         Test-ProfileTiles -Name "Fafurion" -ClientPath $profiles.Fafurion
         Test-ProfileTiles -Name "Homonkulus" -ClientPath $profiles.Homonkulus
-    ) | Select-Object Profile, Tile, Header, Signature, Version, Decode, Ready | Format-Table -AutoSize
+    ) | Select-Object Profile, Tile, Header, Protection, Decode, Ready | Format-Table -AutoSize
     return
 }
 
 $profileName = if ($Profile -eq "Homunculus") { "Homonkulus" } else { $Profile }
-Test-ProfileTiles -Name $profileName -ClientPath $profiles[$Profile] | Select-Object Profile, Tile, Header, Signature, Version, Decode, Ready | Format-Table -AutoSize
+Test-ProfileTiles -Name $profileName -ClientPath $profiles[$Profile] | Select-Object Profile, Tile, Header, Protection, Decode, Ready | Format-Table -AutoSize
