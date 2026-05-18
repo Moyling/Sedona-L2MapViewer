@@ -24,6 +24,7 @@ public:
 	void onSelectClientClick(MyGUI::Widget* sender);
 	void onSelectDonorClick(MyGUI::Widget* sender);
 	void onSelectGeodataExportClick(MyGUI::Widget* sender);
+	void onSelectAssetStagingClick(MyGUI::Widget* sender);
 	void onShowClientStatusClick(MyGUI::Widget* sender);
 	void onClientStatusWindowClose(MyGUI::Window* sender, const std::string& evt);
 	void onProfileH5Click(MyGUI::Widget* sender);

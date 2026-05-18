@@ -67,6 +67,8 @@ void L2UIEditor::Init()
 	ui_topMenu_Client_Donor->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectDonorClick);
 	MyGUI::MenuItem *ui_topMenu_Client_GeoExport = ui_topMenu_ClientMenu->addItem(L"Select geodata export...", MyGUI::MenuItemType::Normal, "TopMenu_Client_GeoExport");
 	ui_topMenu_Client_GeoExport->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectGeodataExportClick);
+	MyGUI::MenuItem *ui_topMenu_Client_AssetStaging = ui_topMenu_ClientMenu->addItem(L"Select asset staging...", MyGUI::MenuItemType::Normal, "TopMenu_Client_AssetStaging");
+	ui_topMenu_Client_AssetStaging->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectAssetStagingClick);
 	MyGUI::MenuItem *ui_topMenu_Client_Status = ui_topMenu_ClientMenu->addItem(L"Show client status", MyGUI::MenuItemType::Normal, "TopMenu_Client_Status");
 	ui_topMenu_Client_Status->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowClientStatusClick);
 	ui_topMenu_ClientMenu->addItem("", MyGUI::MenuItemType::Separator);
@@ -266,6 +268,29 @@ void L2UIEditor::onSelectGeodataExportClick(MyGUI::Widget* sender)
 	{
 		char args[4096];
 		sprintf_s(args, sizeof(args), "--client=\"%s\" --donor-client=\"%s\" --geodata=\"%s\" --geodata-export=\"%s\" --asset-staging=\"%s\"", g_cfg.getClientBaseDir(), g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), path, g_cfg.getAssetStagingDir());
+		restartWithArguments(args);
+	}
+
+	CoTaskMemFree(itemList);
+}
+
+void L2UIEditor::onSelectAssetStagingClick(MyGUI::Widget* sender)
+{
+	BROWSEINFOA browseInfo;
+	memset(&browseInfo, 0, sizeof(browseInfo));
+	browseInfo.hwndOwner = g_window.getHWND();
+	browseInfo.lpszTitle = "Select asset import/export staging folder";
+	browseInfo.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+
+	LPITEMIDLIST itemList = SHBrowseForFolderA(&browseInfo);
+	if(!itemList)
+		return;
+
+	char path[CM_SYSTEM_MAXNAME];
+	if(SHGetPathFromIDListA(itemList, path))
+	{
+		char args[4096];
+		sprintf_s(args, sizeof(args), "--client=\"%s\" --donor-client=\"%s\" --geodata=\"%s\" --geodata-export=\"%s\" --asset-staging=\"%s\"", g_cfg.getClientBaseDir(), g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), path);
 		restartWithArguments(args);
 	}
 
