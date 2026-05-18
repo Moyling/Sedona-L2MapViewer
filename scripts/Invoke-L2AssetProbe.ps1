@@ -121,7 +121,8 @@ $previousHome = $env:L2XDAT_EDITOR_HOME
 $env:L2XDAT_EDITOR_HOME = $l2XdatEditorHome
 
 try {
-    $jsonText = & $cmd $packagePath $Contains $Limit
+    $containsArg = if ($Contains) { $Contains } else { " " }
+    $jsonText = & $cmd $packagePath $containsArg $Limit
     if ($LASTEXITCODE -ne 0) {
         throw "L2AssetViewer probe failed with exit code $LASTEXITCODE"
     }
