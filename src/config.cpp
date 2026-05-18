@@ -11,7 +11,11 @@ config::config(void)
 	CFG_ANTIALIASING = 0;
 	strcpy(CFG_CLIENT_PROFILE, "Custom");
 	strcpy(CFG_CLIENT_BASEDIR, "../");
+	strcpy(CFG_DONOR_PROFILE, "None");
+	strcpy(CFG_DONOR_BASEDIR, "");
 	strcpy(CFG_GEODATA_BASEDIR, "../geodata/");
+	strcpy(CFG_GEODATA_EXPORTDIR, "../sedona-export/geodata/");
+	strcpy(CFG_ASSET_STAGINGDIR, "../sedona-export/assets/");
 }
 
 config::~config(void)
@@ -135,6 +139,11 @@ static void ApplyKnownProfile(char* profile, size_t profileSize, char* clientDir
 	}
 }
 
+static void CopyPathOption(char* dest, size_t destSize, const char* value)
+{
+	CopyOptionValue(dest, destSize, value);
+}
+
 static void InferProfileFromClientPath(char* profile, size_t profileSize, const char* clientDir)
 {
 	if(!clientDir || !profile)
@@ -174,6 +183,39 @@ void config::InitFromCommandLine(LPSTR commandLine)
 		NormalizeDir(CFG_GEODATA_BASEDIR);
 	}
 
+	char envDonorProfile[64];
+	DWORD envDonorProfileLen = GetEnvironmentVariableA("SEDONA_L2_DONOR_PROFILE", envDonorProfile, sizeof(envDonorProfile));
+	if(envDonorProfileLen > 0 && envDonorProfileLen < sizeof(envDonorProfile))
+	{
+		CopyProfileName(CFG_DONOR_PROFILE, sizeof(CFG_DONOR_PROFILE), envDonorProfile);
+		ApplyKnownProfile(CFG_DONOR_PROFILE, sizeof(CFG_DONOR_PROFILE), CFG_DONOR_BASEDIR, sizeof(CFG_DONOR_BASEDIR));
+	}
+
+	char envDonorClient[CM_SYSTEM_MAXNAME];
+	DWORD envDonorClientLen = GetEnvironmentVariableA("SEDONA_L2_DONOR_CLIENT", envDonorClient, sizeof(envDonorClient));
+	if(envDonorClientLen > 0 && envDonorClientLen < sizeof(envDonorClient))
+	{
+		strcpy(CFG_DONOR_BASEDIR, envDonorClient);
+		NormalizeDir(CFG_DONOR_BASEDIR);
+		InferProfileFromClientPath(CFG_DONOR_PROFILE, sizeof(CFG_DONOR_PROFILE), CFG_DONOR_BASEDIR);
+	}
+
+	char envGeodataExport[CM_SYSTEM_MAXNAME];
+	DWORD envGeoExportLen = GetEnvironmentVariableA("SEDONA_L2_GEODATA_EXPORT", envGeodataExport, sizeof(envGeodataExport));
+	if(envGeoExportLen > 0 && envGeoExportLen < sizeof(envGeodataExport))
+	{
+		strcpy(CFG_GEODATA_EXPORTDIR, envGeodataExport);
+		NormalizeDir(CFG_GEODATA_EXPORTDIR);
+	}
+
+	char envStaging[CM_SYSTEM_MAXNAME];
+	DWORD envStagingLen = GetEnvironmentVariableA("SEDONA_L2_ASSET_STAGING", envStaging, sizeof(envStaging));
+	if(envStagingLen > 0 && envStagingLen < sizeof(envStaging))
+	{
+		strcpy(CFG_ASSET_STAGINGDIR, envStaging);
+		NormalizeDir(CFG_ASSET_STAGINGDIR);
+	}
+
 	const char* profileArg = FindOptionValue(commandLine, "--profile=");
 	if(!profileArg)
 		profileArg = FindOptionValue(commandLine, "/profile=");
@@ -201,6 +243,42 @@ void config::InitFromCommandLine(LPSTR commandLine)
 		geodataArg = FindOptionValue(commandLine, "/geodata=");
 	if(geodataArg)
 		CopyOptionValue(CFG_GEODATA_BASEDIR, sizeof(CFG_GEODATA_BASEDIR), geodataArg);
+
+	const char* donorProfileArg = FindOptionValue(commandLine, "--donor-profile=");
+	if(!donorProfileArg)
+		donorProfileArg = FindOptionValue(commandLine, "/donor-profile=");
+	if(donorProfileArg)
+	{
+		CopyProfileName(CFG_DONOR_PROFILE, sizeof(CFG_DONOR_PROFILE), donorProfileArg);
+		ApplyKnownProfile(CFG_DONOR_PROFILE, sizeof(CFG_DONOR_PROFILE), CFG_DONOR_BASEDIR, sizeof(CFG_DONOR_BASEDIR));
+	}
+
+	const char* donorClientArg = FindOptionValue(commandLine, "--donor-client=");
+	if(!donorClientArg)
+		donorClientArg = FindOptionValue(commandLine, "--donor=");
+	if(!donorClientArg)
+		donorClientArg = FindOptionValue(commandLine, "/donor=");
+	if(donorClientArg)
+	{
+		CopyPathOption(CFG_DONOR_BASEDIR, sizeof(CFG_DONOR_BASEDIR), donorClientArg);
+		InferProfileFromClientPath(CFG_DONOR_PROFILE, sizeof(CFG_DONOR_PROFILE), CFG_DONOR_BASEDIR);
+	}
+
+	const char* geodataExportArg = FindOptionValue(commandLine, "--geodata-export=");
+	if(!geodataExportArg)
+		geodataExportArg = FindOptionValue(commandLine, "--geo-export=");
+	if(!geodataExportArg)
+		geodataExportArg = FindOptionValue(commandLine, "/geodata-export=");
+	if(geodataExportArg)
+		CopyPathOption(CFG_GEODATA_EXPORTDIR, sizeof(CFG_GEODATA_EXPORTDIR), geodataExportArg);
+
+	const char* stagingArg = FindOptionValue(commandLine, "--asset-staging=");
+	if(!stagingArg)
+		stagingArg = FindOptionValue(commandLine, "--staging=");
+	if(!stagingArg)
+		stagingArg = FindOptionValue(commandLine, "/staging=");
+	if(stagingArg)
+		CopyPathOption(CFG_ASSET_STAGINGDIR, sizeof(CFG_ASSET_STAGINGDIR), stagingArg);
 }
 
 char* config::getClientBaseDir()
@@ -218,6 +296,26 @@ char* config::getGeodataBaseDir()
 	return CFG_GEODATA_BASEDIR;
 }
 
+char* config::getDonorClientBaseDir()
+{
+	return CFG_DONOR_BASEDIR;
+}
+
+char* config::getDonorProfileName()
+{
+	return CFG_DONOR_PROFILE;
+}
+
+char* config::getGeodataExportDir()
+{
+	return CFG_GEODATA_EXPORTDIR;
+}
+
+char* config::getAssetStagingDir()
+{
+	return CFG_ASSET_STAGINGDIR;
+}
+
 void config::makeWindowTitle(char* dest, size_t destSize)
 {
 	sprintf_s(dest, destSize, "Sedona L2 Map Viewer - %s - %s", CFG_CLIENT_PROFILE, CFG_CLIENT_BASEDIR);
@@ -226,6 +324,11 @@ void config::makeWindowTitle(char* dest, size_t destSize)
 void config::makeGeodataPath(char* dest, size_t destSize, int mapX, int mapY)
 {
 	sprintf_s(dest, destSize, "%s%d_%d.l2j", CFG_GEODATA_BASEDIR, mapX, mapY);
+}
+
+void config::makeGeodataExportPath(char* dest, size_t destSize, int mapX, int mapY)
+{
+	sprintf_s(dest, destSize, "%s%d_%d.l2j", CFG_GEODATA_EXPORTDIR, mapX, mapY);
 }
 
 static BOOL CALLBACK DlgProc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)

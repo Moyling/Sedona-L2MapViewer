@@ -22,6 +22,8 @@ public:
 	void onLoadAreaClick(MyGUI::Widget* sender);
 	void onHideAllClick(MyGUI::Widget* sender);
 	void onSelectClientClick(MyGUI::Widget* sender);
+	void onSelectDonorClick(MyGUI::Widget* sender);
+	void onSelectGeodataExportClick(MyGUI::Widget* sender);
 	void onProfileH5Click(MyGUI::Widget* sender);
 	void onProfileFafurionClick(MyGUI::Widget* sender);
 	void onProfileHomonkulusClick(MyGUI::Widget* sender);
@@ -40,6 +42,8 @@ protected:
 	MyGUI::Button *ui_loadAreaButton;
 	MyGUI::Button *ui_hideAllButton;
 	MyGUI::Button *ui_selectClientButton;
+	MyGUI::Button *ui_selectDonorButton;
+	MyGUI::Button *ui_selectGeodataExportButton;
 	MyGUI::Button *ui_profileH5Button;
 	MyGUI::Button *ui_profileFafurionButton;
 	MyGUI::Button *ui_profileHomonkulusButton;

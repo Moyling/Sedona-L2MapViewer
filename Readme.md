@@ -74,6 +74,18 @@ Client path override:
 .\build\Sedona-L2MapViewer.exe --profile=H5
 .\build\Sedona-L2MapViewer.exe --profile=Fafurion
 .\build\Sedona-L2MapViewer.exe --profile=Homonkulus
+.\build\Sedona-L2MapViewer.exe --profile=H5 --donor-profile=Fafurion --geodata-export="C:\SedonaExports\geodata" --asset-staging="C:\SedonaExports\assets"
+```
+
+Builder/export path overrides:
+
+```powershell
+$env:SEDONA_L2_CLIENT="C:\Path\To\LineageII"
+$env:SEDONA_L2_DONOR_CLIENT="C:\Path\To\DonorLineageII"
+$env:SEDONA_L2_GEODATA="C:\Path\To\existing-geodata"
+$env:SEDONA_L2_GEODATA_EXPORT="C:\Path\To\generated-geodata"
+$env:SEDONA_L2_ASSET_STAGING="C:\Path\To\asset-staging"
+.\build\Sedona-L2MapViewer.exe
 ```
 
 Profile launcher:
@@ -90,12 +102,21 @@ Quick client scan:
 powershell -ExecutionPolicy Bypass -File .\scripts\Scan-Client.ps1 -Profile All
 powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientTiles.ps1 -Profile All
 powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientAssets.ps1 -Profile All
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-L2AssetProbe.ps1 -Profile All
 ```
 
 The broader Sedona toolbox is discovered from `C:\GITHUB\L2Modder_V2`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\Get-L2ModderToolchain.ps1
+```
+
+Deep package/object indexing uses the `L2AssetViewer` Java tools from `C:\GITHUB\L2Modder_V2`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Invoke-L2AssetProbe.ps1 -Profile H5 -Kind Maps -Package 23_22.unr -Contains StaticMeshActor
+powershell -ExecutionPolicy Bypass -File .\scripts\Invoke-L2AssetProbe.ps1 -Profile Fafurion -Kind StaticMeshes -Package Aden_blazingswamp_S.usx -Contains StaticMesh
+powershell -ExecutionPolicy Bypass -File .\scripts\Invoke-L2AssetProbe.ps1 -Profile Homonkulus -Kind SysTextures -Package LineageEffectsTextures.utx -Contains Texture
 ```
 
 The coding/export integration map is documented in `L2MODDER_INTEGRATION.md`.

@@ -56,16 +56,21 @@ Sedona should become a Lineage II map builder, not only a map viewer.
 - [x] Add package-header smoke checks for map, staticmesh, systexture, and texture samples.
 - [x] Confirm representative H5/Fafurion/Homonkulus maps, staticmeshes, systextures, and textures are internal-XOR ready.
 - [x] Document the `L2Modder_V2` decoding, asset export, editor, and geodata references in `L2MODDER_INTEGRATION.md`.
+- [x] Wrap the `L2AssetViewer` package index tool as a Sedona asset probe.
+- [x] Smoke-test Java package indexing for H5, Fafurion, and Homonkulus map/staticmesh/systexture samples.
+
+## Current Sprint
+
+- [x] Add target/donor client model to config before implementing asset transfer.
+- [x] Add geodata export output path to config and GUI.
 
 ## Next
 
 - [ ] Add in-app profile selector after the command-line flow is stable.
-- [ ] Add target/donor client model to config before implementing asset transfer.
-- [ ] Add geodata export output path to config and GUI.
 - [ ] Design the editor data model: original map data, staged edits, imported assets, generated geodata.
 - [ ] Implement a Sedona geodata writer from the Mobius `Region`/`IBlock` layout.
-- [ ] Wrap `L2AssetViewer` package index/texture export tools as Sedona asset import probes.
-- [ ] Use the `L2AssetViewer` Java probes as fallback for deeper package/object indexing.
+- [ ] Wrap `L2AssetViewer` texture export tools as Sedona texture preview probes.
+- [ ] Convert package probe JSON into a persistent asset/dependency cache for the GUI.
 - [ ] Harden texture/staticmesh object deserialize failures into warnings during real tile load.
 
 ## Usage
@@ -90,6 +95,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Scan-Client.ps1 -Profile H5
 powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientTiles.ps1 -Profile All
 powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientAssets.ps1 -Profile All
 powershell -ExecutionPolicy Bypass -File .\scripts\Get-L2ModderToolchain.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-L2AssetProbe.ps1 -Profile All
+powershell -ExecutionPolicy Bypass -File .\scripts\Invoke-L2AssetProbe.ps1 -Profile Fafurion -Kind Maps -Package 23_22.unr -Contains StaticMeshActor
 ```
 
 Environment-variable mode:
