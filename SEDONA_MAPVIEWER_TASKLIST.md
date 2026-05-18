@@ -68,11 +68,12 @@ Sedona should become a Lineage II map builder, not only a map viewer.
 - [x] Add on-demand Client Status window so long paths do not occupy the workspace.
 - [x] Add top-menu target and donor profile presets for H5, Fafurion, and Homonkulus.
 - [x] Add top-menu asset staging folder selector for cross-client import/export preparation.
+- [x] Add asset staging report script before real client file copying is implemented.
 
 ## Next
 
 - [ ] Add recent-client history behind the top Client menu.
-- [ ] Add asset staging report preview before copying client files.
+- [ ] Connect the asset staging report to an on-demand GUI preview window.
 - [ ] Design the editor data model: original map data, staged edits, imported assets, generated geodata.
 - [ ] Implement a Sedona geodata writer from the Mobius `Region`/`IBlock` layout.
 - [ ] Wrap `L2AssetViewer` texture export tools as Sedona texture preview probes.
@@ -103,6 +104,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientAssets.ps1 -Profil
 powershell -ExecutionPolicy Bypass -File .\scripts\Get-L2ModderToolchain.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\Test-L2AssetProbe.ps1 -Profile All
 powershell -ExecutionPolicy Bypass -File .\scripts\Invoke-L2AssetProbe.ps1 -Profile Fafurion -Kind Maps -Package 23_22.unr -Contains StaticMeshActor
+powershell -ExecutionPolicy Bypass -File .\scripts\New-AssetStagingReport.ps1 -TargetProfile H5 -DonorProfile Fafurion
 ```
 
 Environment-variable mode:
