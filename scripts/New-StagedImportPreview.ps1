@@ -176,6 +176,24 @@ if ($needsStaging.Count -gt 0) {
     $warnings.Add("$($needsStaging.Count) dependency package(s) need staging before import.")
 }
 
+$copyManifest = @(
+    $needsStaging |
+        Where-Object { $_.DonorPath } |
+        ForEach-Object {
+            $relativeFolder = if ($_.DonorKind -eq "System") { "system" } else { $_.DonorKind }
+            $targetPath = Join-Path $stagingFullPath (Join-Path $relativeFolder (Split-Path -Leaf $_.DonorPath))
+
+            [pscustomobject]@{
+                Token = $_.Token
+                Kind = $_.DonorKind
+                Source = $_.DonorPath
+                StagingTarget = $targetPath
+                ExistsInStaging = Test-Path -LiteralPath $targetPath
+                Action = "Copy"
+            }
+        }
+)
+
 $report = [pscustomobject]@{
     TargetProfile = if ($TargetProfile -eq "Homunculus") { "Homonkulus" } else { $TargetProfile }
     TargetRoot = $targetRoot
@@ -186,12 +204,14 @@ $report = [pscustomobject]@{
     StagingPath = $stagingFullPath
     DependencyReport = $dependencyReport
     DependencyPreview = @($dependencyRows)
+    CopyManifest = @($copyManifest)
     Summary = [pscustomobject]@{
         AlreadyInTarget = @($dependencyRows | Where-Object { $_.State -eq "AlreadyInTarget" }).Count
         AlreadyStaged = @($dependencyRows | Where-Object { $_.State -eq "AlreadyStaged" }).Count
         NeedsStaging = @($dependencyRows | Where-Object { $_.State -eq "NeedsStaging" }).Count
         MissingFromKnownFolders = @($dependencyRows | Where-Object { $_.State -eq "MissingFromKnownFolders" }).Count
         BuiltIn = @($dependencyRows | Where-Object { $_.State -eq "BuiltIn" }).Count
+        ManifestCopies = $copyManifest.Count
     }
     Warnings = @($warnings)
 }
@@ -215,6 +235,15 @@ $report.DependencyPreview |
     Where-Object { $_.State -in @("NeedsStaging", "MissingFromKnownFolders") } |
     Select-Object Token, State, DonorKind, DonorPath |
     Format-Table -AutoSize
+Write-Host ""
+Write-Host "Dry-run copy manifest"
+if ($report.CopyManifest.Count -gt 0) {
+    $report.CopyManifest |
+        Select-Object Token, Kind, Source, StagingTarget |
+        Format-Table -AutoSize
+} else {
+    Write-Host " - no copy actions required"
+}
 Write-Host ""
 Write-Host "Warnings"
 if ($report.Warnings.Count -gt 0) {

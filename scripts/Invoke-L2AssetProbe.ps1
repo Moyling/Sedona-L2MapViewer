@@ -119,8 +119,15 @@ if (!$l2XdatEditorHome) {
 $packagePath = Resolve-PackagePath -ClientRoot $clientRoot -PackageKind $Kind -PackageName $Package
 $previousHome = $env:L2XDAT_EDITOR_HOME
 $env:L2XDAT_EDITOR_HOME = $l2XdatEditorHome
+$mutex = New-Object System.Threading.Mutex($false, "Global\SedonaL2AssetProbeCompile")
+$hasMutex = $false
 
 try {
+    $hasMutex = $mutex.WaitOne([TimeSpan]::FromMinutes(2))
+    if (!$hasMutex) {
+        throw "Timed out waiting for the L2AssetViewer package index compile lock."
+    }
+
     $containsArg = if ($Contains) { $Contains } else { " " }
     $jsonText = & $cmd $packagePath $containsArg $Limit
     if ($LASTEXITCODE -ne 0) {
@@ -151,5 +158,9 @@ try {
     }
 }
 finally {
+    if ($hasMutex) {
+        $mutex.ReleaseMutex()
+    }
+    $mutex.Dispose()
     $env:L2XDAT_EDITOR_HOME = $previousHome
 }
