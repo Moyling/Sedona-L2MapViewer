@@ -6,6 +6,17 @@ Sedona-L2MapViewer is a standalone Lineage II world/map viewer for inspecting cl
 
 It reads Lineage II client packages directly, loads map tiles on demand, renders the UE2/BSP world geometry and static meshes, and includes an upgraded package decoding path for protected client files.
 
+Long-term, Sedona is intended to become a Lineage II map builder: edit map content, browse/import assets, move compatible graphical elements between supported clients, generate geodata automatically, and export generated geodata into a separate output folder.
+
+## Planned Builder Scope
+
+- In-app client, donor-client, and geodata output folder selection.
+- Package and asset browser for maps, static meshes, textures, systextures, animations, sounds, and system packages.
+- Editor tools for selecting, moving, rotating, scaling, duplicating, deleting, and inspecting map elements.
+- Cross-client asset transfer with dependency scanning and compatibility checks.
+- Automatic geodata generation from terrain, BSP, static meshes, collision, and blocking data.
+- Separate geodata export folder with validation and export reports.
+
 ## Current Build
 
 The Release x64 output is:
@@ -78,6 +89,13 @@ Quick client scan:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\Scan-Client.ps1 -Profile All
 powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientTiles.ps1 -Profile All
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientAssets.ps1 -Profile All
+```
+
+The broader Sedona toolbox is discovered from `C:\GITHUB\L2Modder_V2`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Get-L2ModderToolchain.ps1
 ```
 
 ## Supported Client Data

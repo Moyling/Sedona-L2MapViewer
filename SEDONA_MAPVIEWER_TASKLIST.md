@@ -2,7 +2,36 @@
 
 ## Prototype Warning
 
-This is not a finished release yet. The viewer starts and can load map tiles, but client source selection, automatic geodata generation, and the full asset/UI workflow are still incomplete.
+This is not a finished release yet. The viewer starts and can load map tiles, but client source selection, automatic geodata generation, editing, cross-client asset transfer, and the full asset/UI workflow are still incomplete.
+
+## Target Product
+
+Sedona should become a Lineage II map builder, not only a map viewer.
+
+- [ ] Viewer: inspect maps, BSP, terrain, static meshes, textures, actors, water, collision, and existing geodata.
+- [ ] Editor: select, move, rotate, scale, duplicate, delete, and save/export placed map elements.
+- [ ] Asset browser: list and preview static meshes, textures, packages, actors, and reusable scene elements.
+- [ ] Cross-client workflow: choose a donor client and a target client, then move compatible graphical assets/elements between them.
+- [ ] Dependency resolver: detect required textures, materials, meshes, animations, sounds, scripts, and package references before import.
+- [ ] Compatibility gate: detect package protection, package version, missing dependencies, and unsupported object classes per client.
+- [ ] Automatic geodata builder: generate geodata from edited terrain, BSP, static meshes, blocking volumes, and collision data.
+- [ ] Geodata exporter: write generated geodata into a selected separate output folder.
+- [ ] Batch mode: scan/export all supported client profiles through repeatable scripts.
+
+## Feature Backlog
+
+- [ ] Add real in-app client source selector with recent profiles.
+- [ ] Add separate geodata output folder selector.
+- [ ] Add source/donor client selector for importing assets from another client.
+- [ ] Add package tree panel for `Maps`, `StaticMeshes`, `Textures`, `SysTextures`, `Animations`, `Sounds`, and `System`.
+- [ ] Add map tile grid with present/missing/decodable/loaded/error states.
+- [ ] Add object property inspector for selected actors, BSP surfaces, meshes, materials, and collision.
+- [ ] Add editor transform gizmos or numeric transform fields.
+- [ ] Add undo/redo command stack for editor operations.
+- [ ] Add asset import plan preview before copying anything into a target workspace.
+- [ ] Add dependency copy/export staging folder so target clients are not modified blindly.
+- [ ] Add geodata preview overlay for generated output before saving.
+- [ ] Add export report with edited tiles, imported assets, missing assets, generated geodata files, and warnings.
 
 ## Done
 
@@ -23,12 +52,18 @@ This is not a finished release yet. The viewer starts and can load map tiles, bu
 - [x] Guard package open failures before reading package headers.
 - [x] Smoke-test `23_22` and `22_22` on H5, Fafurion, and Homonkulus.
 - [x] Confirm sample map tiles use `Lineage2Ver111` and the internal XOR loader path.
+- [x] Map the `C:\GITHUB\L2Modder_V2` toolbox into a reusable toolchain manifest.
+- [x] Add package-header smoke checks for map, staticmesh, systexture, and texture samples.
+- [x] Confirm representative H5/Fafurion/Homonkulus maps, staticmeshes, systextures, and textures are internal-XOR ready.
 
 ## Next
 
 - [ ] Add in-app profile selector after the command-line flow is stable.
-- [ ] Harden texture/staticmesh failures into warnings during real tile load.
-- [ ] Extend texture/staticmesh smoke checks beyond map packages.
+- [ ] Add target/donor client model to config before implementing asset transfer.
+- [ ] Add geodata export output path to config and GUI.
+- [ ] Design the editor data model: original map data, staged edits, imported assets, generated geodata.
+- [ ] Use the `L2AssetViewer` Java probes as fallback for deeper package/object indexing.
+- [ ] Harden texture/staticmesh object deserialize failures into warnings during real tile load.
 
 ## Usage
 
@@ -50,6 +85,8 @@ Client scan:
 powershell -ExecutionPolicy Bypass -File .\scripts\Scan-Client.ps1 -Profile All
 powershell -ExecutionPolicy Bypass -File .\scripts\Scan-Client.ps1 -Profile H5
 powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientTiles.ps1 -Profile All
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-ClientAssets.ps1 -Profile All
+powershell -ExecutionPolicy Bypass -File .\scripts\Get-L2ModderToolchain.ps1
 ```
 
 Environment-variable mode:
