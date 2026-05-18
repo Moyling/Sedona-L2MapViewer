@@ -302,6 +302,8 @@ public:
 	bool m_IsLoaded;
 	int8 CryptKey;
 	uint32 ContentOffset;
+	char *m_DecodedFileAddr;
+	bool m_DeleteDecodedFile;
 public:
 	jfArray<UName, uint32> Names;
 	jfArray<UExport, uint32> Exports;
@@ -314,6 +316,7 @@ public:
 	void SetFile(char *fileName);
 	void Load();
 	void Open(char *fileName);
+	bool TryOpenDecodedFile(char *fileName);
 	void Read(void *dest, uint32 len);
 	uint32 Tell();
 	void Seek(uint32 offset, int8 origin = U_SEEK_CUR);

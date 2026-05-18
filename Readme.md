@@ -1,15 +1,126 @@
-# Map viewer for Lineage II
-_A memory from 2012. It's messy, but does the job._  
-It can load any number of map tiles and lets you fly around using RMB and WSAD (+ Space & Ctrl). Tested on _Goddess of Destruction_, _C2_, and.. _C4_, i guess.  
+# Sedona-L2MapViewer
 
-**Attribution:** i'd taken base code for some UE entity types from.. can't really remember where : (
-#### Running
-Building may require some quite old libraries, so the easiest way is to grab binaries from the _Releases_ page. They are expecting to find L2 client folder at the parent directory, so put the _build_ folder at the same level as L2's _system_ folder.  
-#### Building
-In case you want to build it, grab _deps.zip_ from the last release and put it in the project root.  
-#### Gallery
+Lineage II map viewer based on the original `justgos/l2mapper` codebase.
+
+The viewer reads Lineage II client packages directly, loads map tiles, renders the UE2/BSP world geometry and static meshes, and can overlay L2J geodata.
+
+## Current Build
+
+The Release x64 output is:
+
+```text
+build/Sedona-L2MapViewer.exe
+```
+
+## Running
+
+The executable expects a Lineage II client folder one level above the `build` folder.
+
+Typical layout:
+
+```text
+SomeFolder/
+  build/
+    Sedona-L2MapViewer.exe
+    data/
+    resources.xml
+    ...
+  Maps/
+  StaticMeshes/
+  SysTextures/
+  Textures/
+  system/
+```
+
+Optional L2J geodata layout:
+
+```text
+SomeFolder/
+  build/
+  geodata/
+    23_22.l2j
+    ...
+```
+
+Controls:
+
+- Right mouse button: rotate camera
+- Mouse wheel: zoom
+- W/A/S/D: move
+- Space: move up
+- Ctrl: move down
+- Menu -> Map: open the tile selector
+
+## Supported Client Data
+
+The package loader scans:
+
+```text
+Maps/*.unr
+SysTextures/*.utx
+Textures/*.utx
+StaticMeshes/*.usx
+```
+
+Package decoding supports the original XOR-protected Lineage package header internally. For newer protected files, the viewer falls back to `l2encdec.exe` when available.
+
+The fallback decoder is searched in this order:
+
+1. `L2ENCDEC_EXE` environment variable
+2. next to the executable
+3. `build/data/l2encdec/l2encdec.exe`
+4. known local `L2Modder_V2/L2FileEdit/data/l2encdec` paths
+
+The repository build includes:
+
+```text
+build/data/l2encdec/l2encdec.exe
+build/data/l2encdec/libgmp-10.dll
+build/data/l2encdec/libz-1.dll
+```
+
+## Building
+
+Prerequisites:
+
+- Visual Studio 2022 Build Tools with C++ workload
+- Windows 10 SDK
+- The `deps/` folder from the original `l2mapper` release
+
+This workspace has been updated to use:
+
+- MSVC toolset: `v143`
+- Windows SDK: `10.0`
+- local dependency paths under `deps/`
+
+Build command:
+
+```powershell
+& 'C:\BuildTools\MSBuild\Current\Bin\MSBuild.exe' l2mapper.sln /m /p:Configuration=Release /p:Platform=x64 /v:minimal
+```
+
+Successful output:
+
+```text
+build/Sedona-L2MapViewer.exe
+```
+
+Known non-fatal linker warnings:
+
+- `LNK4098`: runtime library mix from old third-party libs
+- `LNK4099`: missing `vc120.pdb` for bundled `glew32s.lib`
+
+## Notes
+
+This is old UE2-era code. The renderer uses legacy OpenGL and immediate mode in several places. The parser is practical rather than complete: it focuses on Lineage II package/object/material types needed by the map viewer.
+
+Original upstream:
+
+- https://github.com/justgos/l2mapper
+
+## Gallery
+
 ![](docs/tiles1.jpg)
 ![](docs/tiles2.jpg)
 ![](docs/map.jpg)
-Also, if you'll put l2j geodata at the same level as _build_ folder (path should look like _geodat/**\_\**.l2j_), it will be displayed over geometry.  
 ![](docs/geo.jpg)

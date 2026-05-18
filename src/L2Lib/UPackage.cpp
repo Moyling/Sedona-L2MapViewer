@@ -22,6 +22,130 @@
 
 #include "UPackageManager.h"
 
+#include <io.h>
+#include <stdlib.h>
+
+static const int32 PACKAGE_FILE_TAG = 0x9E2A83C1;
+static const int32 LINEAGE_WIDE_HEADER_TAG = 0x0069004C;
+
+static bool FileExists(const char *fileName)
+{
+	return fileName && _access(fileName, 0) == 0;
+}
+
+static bool IsLineage2VerHeader(const char *bytes, uint32 len)
+{
+	static const char Header[] = {
+		'L', 0, 'i', 0, 'n', 0, 'e', 0, 'a', 0, 'g', 0,
+		'e', 0, '2', 0, 'V', 0, 'e', 0, 'r', 0
+	};
+
+	return len >= sizeof(Header) && memcmp(bytes, Header, sizeof(Header)) == 0;
+}
+
+static void JoinPath(char *out, uint32 outSize, const char *left, const char *right)
+{
+	if(!left || !right || outSize == 0)
+		return;
+
+	strcpy(out, left);
+	uint32 len = strlen(out);
+	if(len > 0 && out[len - 1] != '\\' && out[len - 1] != '/')
+		strcat(out, "\\");
+	strcat(out, right);
+}
+
+static bool FindL2EncDec(char *out, uint32 outSize)
+{
+	char *envPath = getenv("L2ENCDEC_EXE");
+	if(FileExists(envPath))
+	{
+		strcpy(out, envPath);
+		return true;
+	}
+
+	char modulePath[MAX_PATH];
+	GetModuleFileNameA(NULL, modulePath, MAX_PATH);
+	char *slash = strrchr(modulePath, '\\');
+	if(slash)
+		*slash = 0;
+
+	const char *relativeCandidates[] = {
+		"l2encdec.exe",
+		"data\\l2encdec\\l2encdec.exe",
+		"..\\l2encdec\\l2encdec.exe",
+		"..\\L2FileEdit\\data\\l2encdec\\l2encdec.exe",
+		"..\\L2Modder_V2\\L2FileEdit\\data\\l2encdec\\l2encdec.exe",
+		"..\\..\\L2Modder_V2\\L2FileEdit\\data\\l2encdec\\l2encdec.exe",
+		"C:\\GITHUB\\L2Modder_V2\\L2FileEdit\\data\\l2encdec\\l2encdec.exe",
+		0
+	};
+
+	for(uint32 i = 0; relativeCandidates[i]; i++)
+	{
+		char candidate[MAX_PATH];
+		if(strchr(relativeCandidates[i], ':'))
+			strcpy(candidate, relativeCandidates[i]);
+		else
+			JoinPath(candidate, MAX_PATH, modulePath, relativeCandidates[i]);
+
+		if(FileExists(candidate))
+		{
+			strcpy(out, candidate);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool RunL2EncDec(const char *sourceFile, const char *destFile)
+{
+	char exePath[MAX_PATH];
+	if(!FindL2EncDec(exePath, MAX_PATH))
+		return false;
+
+	char commandLine[MAX_PATH * 3];
+	sprintf(commandLine, "\"%s\" -l \"%s\" \"%s\"", exePath, sourceFile, destFile);
+
+	char workingDir[MAX_PATH];
+	strcpy(workingDir, exePath);
+	char *slash = strrchr(workingDir, '\\');
+	if(slash)
+		*slash = 0;
+
+	STARTUPINFOA si;
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&si, sizeof(si));
+	ZeroMemory(&pi, sizeof(pi));
+	si.cb = sizeof(si);
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_HIDE;
+
+	if(!CreateProcessA(NULL, commandLine, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, workingDir, &si, &pi))
+		return false;
+
+	WaitForSingleObject(pi.hProcess, INFINITE);
+
+	DWORD exitCode = 1;
+	GetExitCodeProcess(pi.hProcess, &exitCode);
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+
+	if(exitCode != 0 || !FileExists(destFile))
+		return false;
+
+	FILE *f = fopen(destFile, "rb");
+	if(!f)
+		return false;
+
+	int32 signature = 0;
+	fread(&signature, sizeof(signature), 1, f);
+	fclose(f);
+
+	return signature == PACKAGE_FILE_TAG;
+}
+
 UPackage& UIndex::Serialize(class UPackage& Ar)
 {
 	int32 Index;
@@ -92,10 +216,16 @@ UPackage::UPackage(void)
 	m_IsLoaded = false;
 	CryptKey = 0;
 	ContentOffset = 0;
+	m_DecodedFileAddr = 0;
+	m_DeleteDecodedFile = false;
 }
 
 UPackage::~UPackage(void)
 {
+	if(m_DeleteDecodedFile && m_DecodedFileAddr)
+		DeleteFileA(m_DecodedFileAddr);
+	if(m_DecodedFileAddr)
+		delete [] m_DecodedFileAddr;
 }
 
 void UPackage::SetFile(char *fileName)
@@ -127,22 +257,36 @@ void UPackage::Open(char *fileName)
 
 	*((UPackage*)this) >> Signature;
 
-	if(Signature == 0x0069004C)
+	bool hasLineageHeader = Signature == LINEAGE_WIDE_HEADER_TAG;
+
+	if(hasLineageHeader)
 	{
-		// lineage encrypted
+		// Lineage2Ver111/120/121/211/212 style XOR protection. Newer
+		// 411-414 RSA+zlib files are handled by TryOpenDecodedFile below.
 		Seek(24);
 		*((UPackage*)this) >> CryptKey;
-		CryptKey = 0xC1 ^ CryptKey;
+		CryptKey = (PACKAGE_FILE_TAG & 0xff) ^ CryptKey;
 		IsEncrypted = true;
 		ContentOffset = 28;
-		//Seek(-1, U_SEEK_CUR);
 		Seek(0, U_SEEK_SET);
 		*((UPackage*)this) >> Signature;
 	}
 
-	if(Signature != 0x9E2A83C1)
+	if(Signature != PACKAGE_FILE_TAG && hasLineageHeader)
 	{
 		fclose(_f);
+		_f = 0;
+
+		if(TryOpenDecodedFile(fileName))
+		{
+			*((UPackage*)this) >> Signature;
+		}
+	}
+
+	if(Signature != PACKAGE_FILE_TAG)
+	{
+		if(_f)
+			fclose(_f);
 		printf("Wrong file format\r\n");
 		return;
 	}
@@ -271,6 +415,50 @@ void UPackage::Open(char *fileName)
 	m_IsLoaded = true;
 }
 
+bool UPackage::TryOpenDecodedFile(char *fileName)
+{
+	char header[28];
+	FILE *source = fopen(fileName, "rb");
+	if(!source)
+		return false;
+
+	uint32 bytesRead = fread(header, 1, sizeof(header), source);
+	fclose(source);
+
+	if(!IsLineage2VerHeader(header, bytesRead))
+		return false;
+
+	char tempPath[MAX_PATH];
+	char tempFile[MAX_PATH];
+	GetTempPathA(MAX_PATH, tempPath);
+	GetTempFileNameA(tempPath, "l2m", 0, tempFile);
+
+	if(!RunL2EncDec(fileName, tempFile))
+	{
+		DeleteFileA(tempFile);
+		printf("Cannot decode Lineage2 protected package. Put l2encdec.exe next to the viewer or set L2ENCDEC_EXE.\r\n");
+		return false;
+	}
+
+	if(m_DeleteDecodedFile && m_DecodedFileAddr)
+		DeleteFileA(m_DecodedFileAddr);
+	if(m_DecodedFileAddr)
+		delete [] m_DecodedFileAddr;
+
+	m_DecodedFileAddr = UTIL_CopyString(tempFile);
+	m_DeleteDecodedFile = true;
+
+	IsEncrypted = false;
+	CryptKey = 0;
+	ContentOffset = 0;
+
+	_f = fopen(m_DecodedFileAddr, "rb");
+	if(!_f)
+		return false;
+
+	return true;
+}
+
 void UPackage::Read(void *dest, uint32 len)
 {
 	fread(dest, len, 1, _f);
@@ -316,7 +504,7 @@ UObject *UPackage::GetUObject(char *name)
 		{
 			UObject *Result = 0;
 
-			_f = fopen(m_FileAddr, "rb");
+			_f = fopen(m_DecodedFileAddr ? m_DecodedFileAddr : m_FileAddr, "rb");
 
 			if(!_f)
 			{
