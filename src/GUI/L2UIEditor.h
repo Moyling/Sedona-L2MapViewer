@@ -29,11 +29,15 @@ public:
 	void onProfileH5Click(MyGUI::Widget* sender);
 	void onProfileFafurionClick(MyGUI::Widget* sender);
 	void onProfileHomonkulusClick(MyGUI::Widget* sender);
+	void onDonorProfileH5Click(MyGUI::Widget* sender);
+	void onDonorProfileFafurionClick(MyGUI::Widget* sender);
+	void onDonorProfileHomonkulusClick(MyGUI::Widget* sender);
 protected:
 	void refreshStatusText();
 	void refreshClientStatusText();
 	void restartWithArguments(const char* arguments);
 	void restartWithProfile(const char* profile);
+	void restartWithDonorProfile(const char* profile);
 
 	MyGUI::MenuBarPtr ui_topMenu;
 	MyGUI::ImageBox *ui_leftPanel;

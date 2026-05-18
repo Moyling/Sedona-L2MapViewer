@@ -70,12 +70,19 @@ void L2UIEditor::Init()
 	MyGUI::MenuItem *ui_topMenu_Client_Status = ui_topMenu_ClientMenu->addItem(L"Show client status", MyGUI::MenuItemType::Normal, "TopMenu_Client_Status");
 	ui_topMenu_Client_Status->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowClientStatusClick);
 	ui_topMenu_ClientMenu->addItem("", MyGUI::MenuItemType::Separator);
-	MyGUI::MenuItem *ui_topMenu_Client_H5 = ui_topMenu_ClientMenu->addItem(L"Profile: H5", MyGUI::MenuItemType::Normal, "TopMenu_Client_H5");
+	MyGUI::MenuItem *ui_topMenu_Client_H5 = ui_topMenu_ClientMenu->addItem(L"Target profile: H5", MyGUI::MenuItemType::Normal, "TopMenu_Client_H5");
 	ui_topMenu_Client_H5->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileH5Click);
-	MyGUI::MenuItem *ui_topMenu_Client_Fafurion = ui_topMenu_ClientMenu->addItem(L"Profile: Fafurion", MyGUI::MenuItemType::Normal, "TopMenu_Client_Fafurion");
+	MyGUI::MenuItem *ui_topMenu_Client_Fafurion = ui_topMenu_ClientMenu->addItem(L"Target profile: Fafurion", MyGUI::MenuItemType::Normal, "TopMenu_Client_Fafurion");
 	ui_topMenu_Client_Fafurion->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileFafurionClick);
-	MyGUI::MenuItem *ui_topMenu_Client_Homonkulus = ui_topMenu_ClientMenu->addItem(L"Profile: Homonkulus", MyGUI::MenuItemType::Normal, "TopMenu_Client_Homonkulus");
+	MyGUI::MenuItem *ui_topMenu_Client_Homonkulus = ui_topMenu_ClientMenu->addItem(L"Target profile: Homonkulus", MyGUI::MenuItemType::Normal, "TopMenu_Client_Homonkulus");
 	ui_topMenu_Client_Homonkulus->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileHomonkulusClick);
+	ui_topMenu_ClientMenu->addItem("", MyGUI::MenuItemType::Separator);
+	MyGUI::MenuItem *ui_topMenu_Client_DonorH5 = ui_topMenu_ClientMenu->addItem(L"Donor profile: H5", MyGUI::MenuItemType::Normal, "TopMenu_Client_DonorH5");
+	ui_topMenu_Client_DonorH5->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onDonorProfileH5Click);
+	MyGUI::MenuItem *ui_topMenu_Client_DonorFafurion = ui_topMenu_ClientMenu->addItem(L"Donor profile: Fafurion", MyGUI::MenuItemType::Normal, "TopMenu_Client_DonorFafurion");
+	ui_topMenu_Client_DonorFafurion->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onDonorProfileFafurionClick);
+	MyGUI::MenuItem *ui_topMenu_Client_DonorHomonkulus = ui_topMenu_ClientMenu->addItem(L"Donor profile: Homonkulus", MyGUI::MenuItemType::Normal, "TopMenu_Client_DonorHomonkulus");
+	ui_topMenu_Client_DonorHomonkulus->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onDonorProfileHomonkulusClick);
 
 	MyGUI::MenuItem *ui_topMenu_Editor_Map = ui_topMenu_EditorMenu->addItem(L"Show map window", MyGUI::MenuItemType::Normal, "TopMenu_Editor_Map");
 	ui_topMenu_Editor_Map->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowMapClick);
@@ -296,10 +303,32 @@ void L2UIEditor::onProfileHomonkulusClick(MyGUI::Widget* sender)
 	restartWithProfile("Homonkulus");
 }
 
+void L2UIEditor::onDonorProfileH5Click(MyGUI::Widget* sender)
+{
+	restartWithDonorProfile("H5");
+}
+
+void L2UIEditor::onDonorProfileFafurionClick(MyGUI::Widget* sender)
+{
+	restartWithDonorProfile("Fafurion");
+}
+
+void L2UIEditor::onDonorProfileHomonkulusClick(MyGUI::Widget* sender)
+{
+	restartWithDonorProfile("Homonkulus");
+}
+
 void L2UIEditor::restartWithProfile(const char* profile)
 {
 	char args[4096];
 	sprintf_s(args, sizeof(args), "--profile=%s --donor-client=\"%s\" --geodata=\"%s\" --geodata-export=\"%s\" --asset-staging=\"%s\"", profile, g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
+	restartWithArguments(args);
+}
+
+void L2UIEditor::restartWithDonorProfile(const char* profile)
+{
+	char args[4096];
+	sprintf_s(args, sizeof(args), "--profile=%s --client=\"%s\" --donor-profile=%s --geodata=\"%s\" --geodata-export=\"%s\" --asset-staging=\"%s\"", g_cfg.getClientProfileName(), g_cfg.getClientBaseDir(), profile, g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
 	restartWithArguments(args);
 }
 
