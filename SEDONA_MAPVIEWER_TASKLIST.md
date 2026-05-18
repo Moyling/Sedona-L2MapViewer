@@ -72,11 +72,12 @@ Sedona should become a Lineage II map builder, not only a map viewer.
 - [x] Connect an on-demand GUI staging report preview to the top Client menu.
 - [x] Add package-level donor candidates and dependency warnings to the staging report preview.
 - [x] Add exact dependency extraction report for selected packages.
+- [x] Connect dependency extraction to a staged import preview script.
 
 ## Next
 
 - [ ] Add recent-client history behind the top Client menu.
-- [ ] Connect dependency extraction to staged import preview.
+- [ ] Add dry-run copy manifest generation for packages marked `NeedsStaging`.
 - [ ] Design the editor data model: original map data, staged edits, imported assets, generated geodata.
 - [ ] Implement a Sedona geodata writer from the Mobius `Region`/`IBlock` layout.
 - [ ] Wrap `L2AssetViewer` texture export tools as Sedona texture preview probes.
@@ -109,6 +110,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Test-L2AssetProbe.ps1 -Profil
 powershell -ExecutionPolicy Bypass -File .\scripts\Invoke-L2AssetProbe.ps1 -Profile Fafurion -Kind Maps -Package 23_22.unr -Contains StaticMeshActor
 powershell -ExecutionPolicy Bypass -File .\scripts\New-AssetStagingReport.ps1 -TargetProfile H5 -DonorProfile Fafurion
 powershell -ExecutionPolicy Bypass -File .\scripts\New-AssetDependencyReport.ps1 -Profile Fafurion -Kind Maps -Package 23_22.unr
+powershell -ExecutionPolicy Bypass -File .\scripts\New-StagedImportPreview.ps1 -TargetProfile H5 -DonorProfile Fafurion -Kind Maps -Package 23_22.unr
 ```
 
 Environment-variable mode:
