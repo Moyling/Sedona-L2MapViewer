@@ -98,6 +98,8 @@ The broader Sedona toolbox is discovered from `C:\GITHUB\L2Modder_V2`:
 powershell -ExecutionPolicy Bypass -File .\scripts\Get-L2ModderToolchain.ps1
 ```
 
+The coding/export integration map is documented in `L2MODDER_INTEGRATION.md`.
+
 ## Supported Client Data
 
 The package loader scans:

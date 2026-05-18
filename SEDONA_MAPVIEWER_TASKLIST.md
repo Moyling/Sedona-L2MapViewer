@@ -55,6 +55,7 @@ Sedona should become a Lineage II map builder, not only a map viewer.
 - [x] Map the `C:\GITHUB\L2Modder_V2` toolbox into a reusable toolchain manifest.
 - [x] Add package-header smoke checks for map, staticmesh, systexture, and texture samples.
 - [x] Confirm representative H5/Fafurion/Homonkulus maps, staticmeshes, systextures, and textures are internal-XOR ready.
+- [x] Document the `L2Modder_V2` decoding, asset export, editor, and geodata references in `L2MODDER_INTEGRATION.md`.
 
 ## Next
 
@@ -62,6 +63,8 @@ Sedona should become a Lineage II map builder, not only a map viewer.
 - [ ] Add target/donor client model to config before implementing asset transfer.
 - [ ] Add geodata export output path to config and GUI.
 - [ ] Design the editor data model: original map data, staged edits, imported assets, generated geodata.
+- [ ] Implement a Sedona geodata writer from the Mobius `Region`/`IBlock` layout.
+- [ ] Wrap `L2AssetViewer` package index/texture export tools as Sedona asset import probes.
 - [ ] Use the `L2AssetViewer` Java probes as fallback for deeper package/object indexing.
 - [ ] Harden texture/staticmesh object deserialize failures into warnings during real tile load.
 

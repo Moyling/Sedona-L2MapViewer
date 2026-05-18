@@ -27,6 +27,27 @@ $tools = [ordered]@{
         UnrealPackageIndexJson = Join-Path $root "L2AssetViewer\tools\UnrealPackageIndexJson.java"
         TextureProbe = Join-Path $root "L2AssetViewer\tools\TextureProbe.java"
         TextureExtract = Join-Path $root "L2AssetViewer\tools\TextureExtract.java"
+        UnrealEffectMeshRefs = Join-Path $root "L2AssetViewer\tools\UnrealEffectMeshRefs.java"
+        ConvertPskToGlb = Join-Path $root "L2AssetViewer\tools\convert_psk_to_glb.py"
+        ConvertUnreal3dToGlb = Join-Path $root "L2AssetViewer\tools\convert_unreal_3d_to_glb.py"
+        UModel64 = Join-Path $root "tools\umodel\umodel_64.exe"
+    }
+    GeodataReferences = [ordered]@{
+        GeoEngine = Join-Path $root "source\L2J_Mobius_CT_2.6_HighFive\java\org\l2jmobius\gameserver\geoengine\GeoEngine.java"
+        Cell = Join-Path $root "source\L2J_Mobius_CT_2.6_HighFive\java\org\l2jmobius\gameserver\geoengine\geodata\Cell.java"
+        IBlock = Join-Path $root "source\L2J_Mobius_CT_2.6_HighFive\java\org\l2jmobius\gameserver\geoengine\geodata\IBlock.java"
+        IRegion = Join-Path $root "source\L2J_Mobius_CT_2.6_HighFive\java\org\l2jmobius\gameserver\geoengine\geodata\IRegion.java"
+        Region = Join-Path $root "source\L2J_Mobius_CT_2.6_HighFive\java\org\l2jmobius\gameserver\geoengine\geodata\regions\Region.java"
+        FlatBlock = Join-Path $root "source\L2J_Mobius_CT_2.6_HighFive\java\org\l2jmobius\gameserver\geoengine\geodata\blocks\FlatBlock.java"
+        ComplexBlock = Join-Path $root "source\L2J_Mobius_CT_2.6_HighFive\java\org\l2jmobius\gameserver\geoengine\geodata\blocks\ComplexBlock.java"
+        MultilayerBlock = Join-Path $root "source\L2J_Mobius_CT_2.6_HighFive\java\org\l2jmobius\gameserver\geoengine\geodata\blocks\MultilayerBlock.java"
+    }
+    EditorReferences = [ordered]@{
+        L2Editor = Join-Path $root "L2Editor"
+        L2wTool = Join-Path $root "l2w_tool"
+        Ue2ReadWrite = Join-Path $root "l2w_tool\l2_rw\src\ue2_rw.rs"
+        SpawnBackend = Join-Path $root "l2w_tool\spawn_editor\src\backend.rs"
+        SpawnFrontend = Join-Path $root "l2w_tool\spawn_editor\src\frontend.rs"
     }
     ServerReferences = [ordered]@{
         HighFiveBuild = Join-Path $root "L2J_Mobius_CT_2.6_HighFive_build"
