@@ -41,12 +41,6 @@ protected:
 	MyGUI::Button *ui_loadDefaultButton;
 	MyGUI::Button *ui_loadAreaButton;
 	MyGUI::Button *ui_hideAllButton;
-	MyGUI::Button *ui_selectClientButton;
-	MyGUI::Button *ui_selectDonorButton;
-	MyGUI::Button *ui_selectGeodataExportButton;
-	MyGUI::Button *ui_profileH5Button;
-	MyGUI::Button *ui_profileFafurionButton;
-	MyGUI::Button *ui_profileHomonkulusButton;
 public:
 	L2UIEditor();
 	virtual ~L2UIEditor();

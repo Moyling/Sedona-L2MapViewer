@@ -30,12 +30,6 @@ L2UIEditor::L2UIEditor()
 	ui_loadDefaultButton = 0;
 	ui_loadAreaButton = 0;
 	ui_hideAllButton = 0;
-	ui_selectClientButton = 0;
-	ui_selectDonorButton = 0;
-	ui_selectGeodataExportButton = 0;
-	ui_profileH5Button = 0;
-	ui_profileFafurionButton = 0;
-	ui_profileHomonkulusButton = 0;
 }
 
 L2UIEditor::~L2UIEditor()
@@ -48,6 +42,10 @@ void L2UIEditor::Init()
 	ui_topMenu->setAlign(MyGUI::Align::HStretch | MyGUI::Align::Top);
 	MyGUI::MenuItemPtr ui_topMenu_Main = ui_topMenu->addItem(L"Menu", MyGUI::MenuItemType::Popup);
 	MyGUI::PopupMenuPtr ui_topMenu_MainMenu = ui_topMenu_Main->createItemChildT<MyGUI::PopupMenu>();
+	MyGUI::MenuItemPtr ui_topMenu_Client = ui_topMenu->addItem(L"Client", MyGUI::MenuItemType::Popup);
+	MyGUI::PopupMenuPtr ui_topMenu_ClientMenu = ui_topMenu_Client->createItemChildT<MyGUI::PopupMenu>();
+	MyGUI::MenuItemPtr ui_topMenu_Editor = ui_topMenu->addItem(L"Editor", MyGUI::MenuItemType::Popup);
+	MyGUI::PopupMenuPtr ui_topMenu_EditorMenu = ui_topMenu_Editor->createItemChildT<MyGUI::PopupMenu>();
 
 	MyGUI::MenuItem *ui_topMenu_Main_Map = ui_topMenu_MainMenu->addItem(L"Map", MyGUI::MenuItemType::Normal, "TopMenu_Main_ShowMap");
 	ui_topMenu_Main_Map->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onTopMenu_Main_ShowMap);
@@ -61,6 +59,29 @@ void L2UIEditor::Init()
 	MyGUI::MenuItem *ui_topMenu_Main_Exit = ui_topMenu_MainMenu->addItem(L"Exit", MyGUI::MenuItemType::Normal, "TopMenu_Main_Exit");
 	ui_topMenu_Main_Exit->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onTopMenu_Main_Exit);
 
+	MyGUI::MenuItem *ui_topMenu_Client_Select = ui_topMenu_ClientMenu->addItem(L"Select target client...", MyGUI::MenuItemType::Normal, "TopMenu_Client_Select");
+	ui_topMenu_Client_Select->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectClientClick);
+	MyGUI::MenuItem *ui_topMenu_Client_Donor = ui_topMenu_ClientMenu->addItem(L"Select donor client...", MyGUI::MenuItemType::Normal, "TopMenu_Client_Donor");
+	ui_topMenu_Client_Donor->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectDonorClick);
+	MyGUI::MenuItem *ui_topMenu_Client_GeoExport = ui_topMenu_ClientMenu->addItem(L"Select geodata export...", MyGUI::MenuItemType::Normal, "TopMenu_Client_GeoExport");
+	ui_topMenu_Client_GeoExport->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectGeodataExportClick);
+	ui_topMenu_ClientMenu->addItem("", MyGUI::MenuItemType::Separator);
+	MyGUI::MenuItem *ui_topMenu_Client_H5 = ui_topMenu_ClientMenu->addItem(L"Profile: H5", MyGUI::MenuItemType::Normal, "TopMenu_Client_H5");
+	ui_topMenu_Client_H5->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileH5Click);
+	MyGUI::MenuItem *ui_topMenu_Client_Fafurion = ui_topMenu_ClientMenu->addItem(L"Profile: Fafurion", MyGUI::MenuItemType::Normal, "TopMenu_Client_Fafurion");
+	ui_topMenu_Client_Fafurion->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileFafurionClick);
+	MyGUI::MenuItem *ui_topMenu_Client_Homonkulus = ui_topMenu_ClientMenu->addItem(L"Profile: Homonkulus", MyGUI::MenuItemType::Normal, "TopMenu_Client_Homonkulus");
+	ui_topMenu_Client_Homonkulus->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileHomonkulusClick);
+
+	MyGUI::MenuItem *ui_topMenu_Editor_Map = ui_topMenu_EditorMenu->addItem(L"Show map window", MyGUI::MenuItemType::Normal, "TopMenu_Editor_Map");
+	ui_topMenu_Editor_Map->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowMapClick);
+	MyGUI::MenuItem *ui_topMenu_Editor_Load = ui_topMenu_EditorMenu->addItem(L"Load 23_22", MyGUI::MenuItemType::Normal, "TopMenu_Editor_LoadDefault");
+	ui_topMenu_Editor_Load->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onLoadDefaultClick);
+	MyGUI::MenuItem *ui_topMenu_Editor_LoadArea = ui_topMenu_EditorMenu->addItem(L"Load 3x3 area", MyGUI::MenuItemType::Normal, "TopMenu_Editor_LoadArea");
+	ui_topMenu_Editor_LoadArea->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onLoadAreaClick);
+	MyGUI::MenuItem *ui_topMenu_Editor_Hide = ui_topMenu_EditorMenu->addItem(L"Hide all tiles", MyGUI::MenuItemType::Normal, "TopMenu_Editor_HideAll");
+	ui_topMenu_Editor_Hide->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onHideAllClick);
+
 	ui_leftPanel = MyGUI::Gui::getInstance().createWidget<MyGUI::ImageBox>("ImageBox", 0, 22, 40, 300, MyGUI::Align::Default, "L2Editor", "LeftPanel");
 	ui_leftPanel->setAlign(MyGUI::Align::Left | MyGUI::Align::VStretch);
 	ui_leftPanel->setProperty("ImageTexture", "ui_leftPanelBg.png");
@@ -68,56 +89,32 @@ void L2UIEditor::Init()
 	terrainButton->setCaption(L"T");
 	terrainButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onBtn1MouseClick);
 
-	ui_sceneShowBsp = MyGUI::Gui::getInstance().createWidget<MyGUI::Button>("CheckBox", 45, 30, 150, 20, MyGUI::Align::Default, "L2Editor", "ShowBsp");
-	ui_sceneShowBsp->setCaption(L"Draw BSP");
-	ui_sceneShowBsp->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowBspMouseClick);
+	ui_toolsWnd = MyGUI::Gui::getInstance().createWidget<MyGUI::Window>("WindowCS", 760, 58, 244, 244, MyGUI::Align::Right | MyGUI::Align::Top, "L2WindowsLayer", "ToolsWnd");
+	ui_toolsWnd->setCaption(L"Editor Tools");
+	ui_statusText = ui_toolsWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 220, 54, MyGUI::Align::Top | MyGUI::Align::HStretch, "StatusText");
 
-	ui_toolsWnd = MyGUI::Gui::getInstance().createWidget<MyGUI::Window>("WindowCS", 760, 58, 244, 500, MyGUI::Align::Right | MyGUI::Align::Top, "L2WindowsLayer", "ToolsWnd");
-	ui_toolsWnd->setCaption(L"Sedona Tools");
-	ui_statusText = ui_toolsWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 12, 220, 218, MyGUI::Align::Top | MyGUI::Align::HStretch, "StatusText");
-
-	ui_showMapButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 12, 238, 102, 28, MyGUI::Align::Default, "ShowMapBtn");
+	ui_showMapButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 12, 76, 102, 28, MyGUI::Align::Default, "ShowMapBtn");
 	ui_showMapButton->setCaption(L"Map");
 	ui_showMapButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowMapClick);
 
-	ui_loadDefaultButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 126, 238, 102, 28, MyGUI::Align::Default, "LoadDefaultBtn");
+	ui_loadDefaultButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 126, 76, 102, 28, MyGUI::Align::Default, "LoadDefaultBtn");
 	ui_loadDefaultButton->setCaption(L"Load 23_22");
 	ui_loadDefaultButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onLoadDefaultClick);
 
-	ui_loadAreaButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 12, 276, 102, 28, MyGUI::Align::Default, "LoadAreaBtn");
+	ui_loadAreaButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 12, 114, 102, 28, MyGUI::Align::Default, "LoadAreaBtn");
 	ui_loadAreaButton->setCaption(L"Load 3x3");
 	ui_loadAreaButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onLoadAreaClick);
 
-	ui_hideAllButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 126, 276, 102, 28, MyGUI::Align::Default, "HideAllBtn");
+	ui_hideAllButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 126, 114, 102, 28, MyGUI::Align::Default, "HideAllBtn");
 	ui_hideAllButton->setCaption(L"Hide all");
 	ui_hideAllButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onHideAllClick);
 
-	ui_selectClientButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 12, 314, 216, 28, MyGUI::Align::Default, "SelectClientBtn");
-	ui_selectClientButton->setCaption(L"Select client...");
-	ui_selectClientButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectClientClick);
-
-	ui_selectDonorButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 12, 350, 216, 28, MyGUI::Align::Default, "SelectDonorBtn");
-	ui_selectDonorButton->setCaption(L"Select donor...");
-	ui_selectDonorButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectDonorClick);
-
-	ui_selectGeodataExportButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 12, 386, 216, 28, MyGUI::Align::Default, "SelectGeoExportBtn");
-	ui_selectGeodataExportButton->setCaption(L"Geodata export...");
-	ui_selectGeodataExportButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onSelectGeodataExportClick);
-
-	ui_profileH5Button = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 12, 422, 66, 26, MyGUI::Align::Default, "ProfileH5Btn");
-	ui_profileH5Button->setCaption(L"H5");
-	ui_profileH5Button->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileH5Click);
-
-	ui_profileFafurionButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 86, 422, 66, 26, MyGUI::Align::Default, "ProfileFafurionBtn");
-	ui_profileFafurionButton->setCaption(L"Fafurion");
-	ui_profileFafurionButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileFafurionClick);
-
-	ui_profileHomonkulusButton = ui_toolsWnd->createWidget<MyGUI::Button>("Button", 160, 422, 68, 26, MyGUI::Align::Default, "ProfileHomonkulusBtn");
-	ui_profileHomonkulusButton->setCaption(L"Homonk.");
-	ui_profileHomonkulusButton->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onProfileHomonkulusClick);
-
-	MyGUI::TextBox *helpText = ui_toolsWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 456, 220, 28, MyGUI::Align::Default, "HelpText");
+	MyGUI::TextBox *helpText = ui_toolsWnd->createWidget<MyGUI::TextBox>("TextBox", 12, 154, 220, 54, MyGUI::Align::Default, "HelpText");
 	helpText->setCaption("RMB rotate, wheel zoom\nWASD move, Space/Ctrl height\nClick mesh/BSP to inspect bounds");
+
+	ui_sceneShowBsp = ui_toolsWnd->createWidget<MyGUI::Button>("CheckBox", 12, 212, 150, 20, MyGUI::Align::Default, "ShowBsp");
+	ui_sceneShowBsp->setCaption(L"Draw BSP");
+	ui_sceneShowBsp->eventMouseButtonClick += MyGUI::newDelegate(this, &L2UIEditor::onShowBspMouseClick);
 	refreshStatusText();
 }
 
@@ -272,8 +269,8 @@ void L2UIEditor::onProfileHomonkulusClick(MyGUI::Widget* sender)
 
 void L2UIEditor::restartWithProfile(const char* profile)
 {
-	char args[128];
-	sprintf_s(args, sizeof(args), "--profile=%s", profile);
+	char args[4096];
+	sprintf_s(args, sizeof(args), "--profile=%s --donor-client=\"%s\" --geodata=\"%s\" --geodata-export=\"%s\" --asset-staging=\"%s\"", profile, g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
 	restartWithArguments(args);
 }
 
@@ -290,7 +287,7 @@ void L2UIEditor::refreshStatusText()
 	if(!ui_statusText)
 		return;
 
-	char status[4096];
-	sprintf_s(status, sizeof(status), "Target: %s\n%s\n\nDonor: %s\n%s\n\nGeodata in:\n%s\n\nGeodata out:\n%s\n\nStaging:\n%s", g_cfg.getClientProfileName(), g_cfg.getClientBaseDir(), g_cfg.getDonorProfileName(), g_cfg.getDonorClientBaseDir(), g_cfg.getGeodataBaseDir(), g_cfg.getGeodataExportDir(), g_cfg.getAssetStagingDir());
+	char status[512];
+	sprintf_s(status, sizeof(status), "Target: %s\nDonor: %s\nUse Client menu for paths.", g_cfg.getClientProfileName(), g_cfg.getDonorProfileName());
 	ui_statusText->setCaption(MyGUI::UString(status));
 }
